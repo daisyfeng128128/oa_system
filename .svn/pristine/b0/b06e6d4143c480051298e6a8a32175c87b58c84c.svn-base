@@ -1,0 +1,351 @@
+<%@page import="com.baofeng.commons.entity.Operator.Genres"%>
+<%@page import="com.baofeng.commons.entity.RoleUsers"%>
+<%@page import="com.baofeng.commons.entity.MenuItem.Dev"%>
+<%@page import="com.baofeng.utils.Constants"%>
+<%@page import="com.baofeng.commons.entity.MenuItem.Dev"%>
+<%@page import="com.baofeng.commons.entity.MenuItem.Dev"%>
+<%@page import="org.apache.commons.collections.ComparatorUtils"%>
+<%@page import="org.apache.commons.collections.comparators.ComparatorChain"%>
+<%@page import="org.apache.commons.beanutils.BeanComparator"%>
+<%@page import="org.apache.commons.collections.comparators.ComparableComparator"%>
+<%@page import="com.baofeng.commons.entity.MenuItem"%>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title><spring:message code="title"/></title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/views/css/bootstrap.min.css" />
+<link rel="stylesheet" href="${pageContext.request.contextPath}/views/css/all.css" />
+<script src="${pageContext.request.contextPath}/views/js/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/views/js/sea.js"></script>
+<script>
+    seajs.use("${pageContext.request.contextPath}/views/js/bootstrap.min");
+</script>
+<style>
+body {
+	width: 100%;
+	height: 100%;
+	min-width: 200px;
+	overflow: hidden;
+}
+.fl{float:left; }
+.fr{float:right; }
+.clearFix:after{ content:''; display:block; clear:both; }
+
+.left {
+	height: 100%;
+	width: 100%;
+}
+
+.left-one {
+	width: 100%;
+	height: 46px;
+	line-height:46px; 
+	background-color: #31383d;
+}
+.left-one .logo{
+	width:94px;
+	height:46px;
+	margin-right:28px; 
+	background-image:url(/oa/views/images/logo.png);
+}
+.left-one .home{
+	width:18px;
+	height:18px;
+	margin-right:8px; 
+	margin-top:14px;
+	background-image:url(/oa/views/images/icon_home.png);
+}
+.left-one .hdL{
+	color:#999;
+	margin-right:14px; 
+}
+
+.left-one img {
+	width: 100%;
+	height: 100%;
+}
+
+.left-two {
+	width: 100%;
+	height: 108px;
+	background-color: #fff;
+	color:#999; 
+	padding-top:26px; 
+}
+
+.left-two .user {
+	margin-left:32px;
+}
+
+.left-two .username{
+	color:#f08c55;
+}
+
+.left-two .curLoca{
+	color:#333;
+	margin-left:32px; 
+	margin-top:6px;
+	margin-bottom:6px;
+}
+.left-two .location{
+	border:1px solid #9a9a9a;
+	width:94px;
+	height:28px;
+	line-height:24px;
+	text-align:center;
+	display:inline-block;
+	border-radius:2px;
+	cursor:pointer;
+}
+
+.left-two .location:hover{
+	background-color:#f5f5f5; 
+	border:1px solid #ddd;
+	transition:1s all ease;
+}
+.left-two .loginout {
+	color: #666;
+	line-height: 26px;
+	margin-top: 6px;
+	margin-left: 100px;
+	border: 1px solid #ddd;
+	background-color: #e4e8f1;
+	cursor: pointer;
+	border-radius: 5px;
+	padding: 5px 10px;
+}
+
+.left-three {
+	width: 100%;
+	background-color: #31383d;
+	overflow-y: auto;
+}
+
+.left-three .titleli {
+	background-color: #000;
+	line-height: 60px;
+	cursor: auto;
+	color: #fff;
+	padding-left: 10px;
+}
+
+.left-three>ul>li {
+	width: 100%;
+	line-height: 40px;
+	cursor: pointer;
+}
+
+.left-three>ul>li .more {
+	vertical-align: middle;
+	float: right;
+	width: 14px;
+	height: 8px;
+	margin-right: 38px;
+	margin-top: 14px;
+}
+
+.left-three>ul>li .more2 {
+	vertical-align: middle;
+	float: right;
+	width: 14px;
+	height: 8px;
+	margin-right: 38px;
+	margin-top: 14px;
+	display: none;
+}
+
+.left-three>ul>li>a {
+	display: block;
+	color: #999;
+	font-size: 14px;
+	padding-left:42px; 
+}
+
+.left-three>ul>li>ul {
+	display: none;
+}
+
+.left-three>ul>li li {
+	width: 100%;
+	line-height: 40px;
+	cursor: pointer;
+}
+
+.left-three>ul>li li>a {
+	display: block;
+	color: #999;
+	font-size: 14px;
+	padding-left: 110px;
+}
+
+.left-three .bechange .leftBg{
+	width:18px;
+	height:18px; 
+	margin-right:26px;
+	float:left;
+	margin-top:10px;  
+}
+.left-three>ul .bechange:hover {
+	text-decoration: none;
+	background-color: #599eeb;
+	color: #fff;
+}
+
+.left-three>ul .bechange:hover .more{
+	background-image:url(/oa/views/images/ulshow_hover.png);
+	width:14px;
+	height:8px;
+}
+
+.left-three>ul .bechange:focus {
+	text-decoration: none;
+}
+
+.left-three .achange {
+	background-color: #0074ac;
+	color: #f2f2f2;
+}
+</style>
+<script>
+	$(function() {
+		$(".left-three").css({"height" : $("body").height() - $(".left-one").height() - $(".left-two").height()})
+		$(window).resize(function() {
+			$(".left-three").css({"height" : $("body").height() - $(".left-one").height() - $(".left-two").height()})
+		})
+		
+		var aImg=["icon_caiwu","icon_renshi","icon_zhibo","icon_pingtai","icon_liucheng","icon_geren","icon_shezhi"];
+		$("<span></span>").prependTo(".one-li >li>a");
+		$(".one-li >li>a>span").addClass("leftBg")
+	
+		$(".one-li .bechange").each(function(i,item){
+			$(".leftBg").eq(i).css("background","url(/oa/views/images/"+aImg[i]+".png) no-repeat");
+		})
+		
+		
+		$(".left-three a").click(function() {
+			var $self = $(this).parent("li");
+			if (!$self.find("ul").is(":animated")) {
+				$(".left-three a").removeClass("achange");
+				$self.children("a").addClass("achange");
+				$self.find("img").toggle();
+				$self.find("ul").slideToggle();
+			}
+		})
+		$(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+	})
+</script>
+</head>
+<body>
+   <div class="left">
+        <div class="left-one">
+        	
+        		<span class="logo fl"></span>
+        		<span class="home fl"></span>
+        		<span class="hdL fl">MJ娱乐管理后台</span>
+        </div>
+        <div class="left-two">
+        	<div class="user fcolor#0">
+        		尊敬的 <span class="username">${user.user.accounts}</span><br/>
+        		您已登录<spring:message code="title"/>
+        	</div>
+        	<div class="curLoca">
+        		当前位置：
+        		<span class="location">${branchs_msg}</span>	
+        	</div>
+        </div>
+        <div class="left-three custom-scroll">
+        <ul class="one-li">
+            		<%
+						List<MenuItem> list = (List<MenuItem>)request.getAttribute("itemList");
+						if(list != null && list.size() > 0){
+							list.remove(null);
+							int fntIndex = Integer.MAX_VALUE;
+							RoleUsers user = (RoleUsers) request.getSession().getAttribute(Constants.CURRENT_USER);
+							Comparator cmp = ComparatorUtils.nullLowComparator(ComparableComparator.getInstance());
+							ArrayList<Object> sortFields = new ArrayList<Object>();
+							sortFields.add(new BeanComparator("indexs",cmp));
+							ComparatorChain multiSort = new ComparatorChain(sortFields);
+							Collections.sort(list, multiSort);
+							for(ListIterator<MenuItem> lit = list.listIterator();lit.hasNext();){
+								Integer index = lit.nextIndex();
+								MenuItem menus = lit.next();
+								if(menus != null && menus.getDev() == Dev.YES){
+									if(user != null && (user.getUser().getGenrer() != Genres.SUPERS || user.getUser().getGenrer() != Genres.MANAGER))
+										continue;
+								}
+								
+								if(menus != null && menus.getItem() == null){
+									if(fntIndex == Integer.MAX_VALUE){
+									%>
+										<li>
+								            <a class="bechange achange" href="${pageContext.request.contextPath}/<%=menus.getUrl() %>" target="right">
+								            	<%=menus.getName() %>
+								                <img class="more" src="${pageContext.request.contextPath}/views/images/ulshow.png" style="display: none;">
+								                <img class="more2" src="${pageContext.request.contextPath}/views/images/ulhide.png" style="display: inline;">
+								            </a>
+								            <ul style="display: block;">
+								            	<%
+								            		fntIndex--;
+								            		for(ListIterator<MenuItem> nit = list.listIterator();nit.hasNext();){
+														MenuItem nmenus = nit.next();
+														if(nmenus != null && nmenus.getItem() != null && nmenus.getItem().getId().intValue() == menus.getId().intValue()){
+															if(nmenus.getDev() == Dev.YES){
+																if(user != null && (user.getUser().getGenrer() != Genres.SUPERS || user.getUser().getGenrer() != Genres.MANAGER))
+																	continue;
+															}
+															%><li><a class="bechange" href="${pageContext.request.contextPath}/<%=nmenus.getUrl() %>"  target="right"><%=nmenus.getName() %></a></li><%														
+														}
+								            		}
+								            	%>
+								            </ul>
+								        </li>
+										<%
+									}else{
+										%>
+										<li>
+								            <a class="bechange" href="${pageContext.request.contextPath}/<%=menus.getUrl() %>" target="right">
+								            	<%=menus.getName() %>
+								                <img class="more" src="${pageContext.request.contextPath}/views/images/ulshow.png">
+								                <img class="more2" src="${pageContext.request.contextPath}/views/images/ulhide.png">
+								            </a>
+								            <ul>
+								            	<%
+								            		for(ListIterator<MenuItem> nit = list.listIterator();nit.hasNext();){
+														MenuItem nmenus = nit.next();
+														if(nmenus != null && nmenus.getItem() != null && nmenus.getItem().getId().intValue() == menus.getId().intValue()){
+															if(nmenus.getDev() == Dev.YES){
+																if(user != null && (user.getUser().getGenrer() != Genres.SUPERS || user.getUser().getGenrer() != Genres.MANAGER))
+																	continue;
+															}
+															%><li><a class="bechange" href="${pageContext.request.contextPath}/<%=nmenus.getUrl() %>"  target="right"><%=nmenus.getName() %></a></li><%														
+														}
+								            		}
+								            	%>
+								            </ul>
+								        </li>
+										<%							
+									}
+								}
+							}
+						}
+					%>
+    	</ul>
+    </div>
+</body>
+</html>

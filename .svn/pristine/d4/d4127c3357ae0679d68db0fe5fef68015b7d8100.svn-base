@@ -1,0 +1,188 @@
+package com.baofeng.oa.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.EquipmentCollarBean;
+import com.baofeng.oa.dao.UseApplicationDAO;
+import com.baofeng.oa.entity.BaseEnums.Auditp;
+import com.baofeng.oa.entity.BaseEnums.GrantEquip;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.entity.EquipmentCollar;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.oa.service.IUseApplicationService;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+@Service("useApplicationService")
+public class UseApplicationServiceImpl implements IUseApplicationService {
+	@Autowired
+	private UseApplicationDAO useApplicationDAO;
+	@Autowired
+	private IEmployeeService employeeService;
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public NPageResult<?> readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer type, String fastArg,SearchFilter searchFilter) {
+		NPageResult rows = this.useApplicationDAO.readPages(pageSize, curPage, sortName, sortOrder, fastArg,searchFilter,type);
+		if (rows !=null  && rows.getData().size() > 0) {
+			List<EquipmentCollarBean> beanList = new ArrayList<EquipmentCollarBean>();
+			for (Object o : rows.getData()) {
+					EquipmentCollar equipmentCollar = (EquipmentCollar) o;
+					EquipmentCollarBean bean = new EquipmentCollarBean();
+					bean.setId(equipmentCollar.getId());
+					bean.setNum(String.valueOf(equipmentCollar.getEmployee().getNumber()));
+					bean.setRealname(equipmentCollar.getRealname());
+					bean.setAliasname(equipmentCollar.getAliasname());
+					bean.setDepart(equipmentCollar.getDepart());
+					bean.setAuditp(equipmentCollar.getAuditp() == Auditp.PENDING ? "待审核" : (equipmentCollar.getAuditp() == Auditp.UNKNOWN)? "审核中" : (equipmentCollar.getAuditp() == Auditp.PASSED ? "通过" : "未通过"));
+					bean.setGrantEquip(equipmentCollar.getGrantEquip() == GrantEquip.UNKNOWN ? "待发放" : (equipmentCollar.getGrantEquip() == GrantEquip.PASSED ? "发放完成" : ""));
+					bean.setApplyDT(equipmentCollar.getApplyDT());
+					bean.setRemarks(equipmentCollar.getRemarks());
+					if (equipmentCollar.getCompleteDT() != null ) {
+						bean.setCompleteDT(equipmentCollar.getCompleteDT());
+					}
+					if (equipmentCollar.getRejectMsg() != null) {
+						bean.setRejectMsg(equipmentCollar.getRejectMsg());;
+					}
+					bean.setGoodsname(equipmentCollar.getGoodsname());
+					bean.setModel(equipmentCollar.getModel());
+					bean.setNumbers(equipmentCollar.getNumbers().toString());
+					bean.setPlace(equipmentCollar.getPlace());
+					beanList.add(bean);
+				}
+				rows.setData(beanList);
+			}
+		return rows;
+	}
+
+	@Override
+	public boolean saveEquipmentCollar(List<EquipmentCollarBean> list, RoleUsers users, Integer branchs, HttpServletRequest request) {
+		Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+		if (employee != null) {
+			EquipmentCollar equipmentCollar = null;
+			try {
+				if (list != null) {
+					for (EquipmentCollarBean bean : list) {
+						if (bean.getId() != null && bean.getId().intValue() > 0){
+							equipmentCollar=this.useApplicationDAO.readEquipmentCollar(Integer.valueOf(bean.getId()));
+							equipmentCollar.setId(bean.getId());
+						}else{
+							equipmentCollar= new EquipmentCollar();
+						}
+						equipmentCollar.setBranchs(branchs);
+						equipmentCollar.setRealname(employee.getName());
+						if (bean.getDepart() != null) {
+							equipmentCollar.setDepart(employee.getDepart().getName());
+						}
+						equipmentCollar.setAliasname(employee.getAliasname());
+						equipmentCollar.setGoodsname(bean.getGoodsname());
+						equipmentCollar.setModel(bean.getModel());
+						equipmentCollar.setNumbers(Integer.valueOf(bean.getNumbers()));
+						equipmentCollar.setPlace(bean.getPlace());
+						equipmentCollar.setUsername(bean.getUsername());
+						equipmentCollar.setApplyDT(bean.getApplyDT());
+						equipmentCollar.setAuditp(Auditp.PENDING);
+						equipmentCollar.setGrantEquip(GrantEquip.FAILED);
+						equipmentCollar.setEmployee(employee);
+						equipmentCollar.setRemarks(bean.getRemarks());
+						this.useApplicationDAO.saveEquipmentCollar(equipmentCollar);
+					  }
+				   }
+				return true;
+				} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean midEquipment(EquipmentCollarBean bean, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+		if (employee != null) {
+				try {
+					if (bean.getId() != null && bean.getId().intValue() > 0){
+						EquipmentCollar equipmentCollar=this.useApplicationDAO.readEquipmentCollar(Integer.valueOf(bean.getId()));
+						if(equipmentCollar != null && equipmentCollar.getAuditp() == Auditp.PENDING){
+						equipmentCollar.setId(bean.getId());
+						equipmentCollar.setBranchs(branchs);
+						equipmentCollar.setRealname(employee.getName());
+						if (bean.getDepart() != null) {
+							equipmentCollar.setDepart(employee.getDepart().getName());
+						}
+						equipmentCollar.setApplyDT(bean.getApplyDT());
+						equipmentCollar.setGoodsname(bean.getGoodsname());
+						equipmentCollar.setModel(bean.getModel());
+						equipmentCollar.setNumbers(Integer.valueOf(bean.getNumbers()));
+						equipmentCollar.setPlace(bean.getPlace());
+						equipmentCollar.setUsername(bean.getUsername());
+						equipmentCollar.setAuditp(Auditp.PENDING);
+						equipmentCollar.setGrantEquip(GrantEquip.FAILED);
+						equipmentCollar.setEmployee(employee);
+						equipmentCollar.setRemarks(bean.getRemarks());
+						if(this.useApplicationDAO.saveEquipmentCollar(equipmentCollar)){
+							return true;
+							}
+						}
+					}
+				} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean deleteEquipment(Integer id, HttpServletRequest request) {
+		if (id != null && id.intValue() > 0) {
+			EquipmentCollar equipmentCollar = this.useApplicationDAO.readEquipmentCollar(id);
+			if (equipmentCollar != null && equipmentCollar.getAuditp() == Auditp.PENDING) {
+				equipmentCollar.setStatus(EntityStatus.DELETED);
+				if (this.useApplicationDAO.saveEquipmentCollar(equipmentCollar)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public EquipmentCollarBean readEquipmentCollarBean(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			EquipmentCollar equipmentCollar = this.useApplicationDAO.readEquipmentCollar(id);
+			if (equipmentCollar != null) {
+				EquipmentCollarBean bean = new EquipmentCollarBean();
+				bean.setId(equipmentCollar.getId());
+				bean.setNum(String.valueOf(equipmentCollar.getEmployee().getNumber()));
+				bean.setApplyDT(equipmentCollar.getApplyDT());
+				bean.setRealname(equipmentCollar.getRealname());
+				bean.setAuditp(equipmentCollar.getAuditp().toString());
+				bean.setDepart(equipmentCollar.getDepart());
+				bean.setGoodsname(equipmentCollar.getGoodsname());
+				bean.setModel(equipmentCollar.getModel());
+				bean.setUsername(equipmentCollar.getUsername());
+				bean.setPlace(equipmentCollar.getPlace());
+				bean.setNumbers(equipmentCollar.getNumbers().toString());
+				bean.setRemarks(equipmentCollar.getRemarks());
+				return bean;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public EquipmentCollar readEquipmentCollar(Integer id) {
+		return this.useApplicationDAO.readEquipmentCollar(id);
+	}
+	
+	
+
+}

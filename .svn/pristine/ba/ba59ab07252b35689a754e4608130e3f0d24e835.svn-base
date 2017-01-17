@@ -1,0 +1,32 @@
+package com.baofeng.oa.service;
+
+import java.util.Date;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.AssetsBean;
+import com.baofeng.oa.entity.Assets;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+
+public interface IAssetsService {
+
+	NPageResult<?> readPages(int pageSize, int curPage, String sortName,String sortOrder, String branchsMsg, SearchFilter searchFilter);
+
+	Assets readAllassetsByDate(Integer branchs, Date $date1, Date $date2);
+
+	boolean addAssets(Assets assets, HttpServletRequest request);
+
+	boolean updatendAssets(AssetsBean bean, RoleUsers users,HttpServletRequest request);
+
+	NPageResult<?> readPagesAduit(int pageSize, int curPage, String sortName,
+			String sortOrder, String branchsMsg, SearchFilter searchFilter);
+
+	Assets readAssetsById(Integer valueOf, SearchFilter searchFilter);
+
+	Assets readAllassetsByThisMonth(Date parse);
+
+
+}

@@ -1,0 +1,147 @@
+package com.baofeng.work;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Observable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.baofeng.commons.entity.Operator.Genres;
+import com.baofeng.oa.entity.Actores;
+import com.baofeng.oa.entity.BaseEnums.ActoresLabour;
+import com.baofeng.oa.entity.BaseEnums.EmpTransfer;
+import com.baofeng.oa.entity.BaseEnums.EmployeType;
+import com.baofeng.oa.entity.BaseEnums.LineGenres;
+import com.baofeng.oa.entity.BaseEnums.Settlement;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.entity.EmployeeTransfer;
+import com.baofeng.oa.entity.Managers;
+import com.baofeng.oa.entity.Talent;
+import com.baofeng.oa.service.CommService;
+import com.baofeng.oa.service.IEmpTransferService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.oa.service.IManagerService;
+import com.baofeng.oa.service.IPlatformsActoresService;
+import com.baofeng.oa.service.ITalentService;
+import com.baofeng.utils.CustomDateUtils;
+
+public class ManTransferOnWorkListener implements BaseObserver {
+
+	private CommService commService;
+	
+	private static final Logger logger = LoggerFactory.getLogger(ManTransferOnWorkListener.class);
+
+	public ManTransferOnWorkListener(CommService commService) {
+		this.commService = commService;
+	}
+
+	@Override
+	public void update(Observable o, Object arg) {
+		EmployeeTransfer employeeTransfer = (EmployeeTransfer) analysis(arg);
+		Date $date1 = CustomDateUtils.Handler.currentMonthFirstDay(employeeTransfer.getCreateDT());
+		Date $date2 = CustomDateUtils.Handler.currentMonthEndDay(employeeTransfer.getCreateDT());
+		
+		IManagerService managerService = (IManagerService) commService.getService().get(IManagerService.class.getName());
+		ITalentService talentService = (ITalentService) commService.getService().get(ITalentService.class.getName());
+		IEmployeeService employeeService = (IEmployeeService) commService.getService().get(IEmployeeService.class.getName());
+		IPlatformsActoresService platformsActoresService = (IPlatformsActoresService) commService.getService().get(IPlatformsActoresService.class.getName());
+		IEmpTransferService empTransferService = (IEmpTransferService) commService.getService().get(IEmpTransferService.class.getName());
+		WorkManagers workManagers = (WorkManagers) commService.getService().get(WorkManagers.class.getName());
+		
+		List<EmployeeTransfer> $employeeTransfer = null;
+		try {
+			$employeeTransfer = (List<EmployeeTransfer>) empTransferService.readTraEmployee( $date1, $date2);
+			if ($employeeTransfer.size() > 0) {
+				for (EmployeeTransfer employeeT : $employeeTransfer) {
+					Employee emp = employeeService.readEmployeebyNumber(employeeT.getNumber());
+					if (emp != null ) {
+						if (emp.getEmployeType() == EmployeType.MANAGER) {
+							if (employeeT.getEmployeType() == EmployeType.ACTORES) {
+								Actores actores = new Actores();
+								emp.setPosition(employeeT.getNewPosition());
+								emp.setDepart(employeeT.getNewDepart());
+								emp.setSupervisor(employeeT.getSupervisor());
+								actores.setBranchs(emp.getBranchs());
+								actores.setNumber(emp.getNumber());
+								actores.setRealname(emp.getName());
+								actores.setSex(emp.getSex());
+								actores.setAliasname(emp.getAliasname());
+								actores.setAddress(emp.getLiveAdress());
+								actores.setIdcard(emp.getIdcard());
+								actores.setGenre(LineGenres.OFFLINE);
+								actores.setPhone(emp.getPhone());
+								actores.setQq(emp.getQq());
+								actores.setEmail(emp.getEmail());
+								actores.setGenrer(emp.getGenrer());
+								actores.setEntryTime(emp.getJoinDate());
+								emp.setGenrer(Genres.TRANSFER);
+								actores.setLabour(ActoresLabour.SYSTEM);
+								emp.setEmployeType(EmployeType.ACTORES);
+								employeeT.setEmpTransfer(EmpTransfer.PASSED);
+								actores.setEmployee(emp);
+								actores.setCreateDT($date1);
+								actores.setSettl(Settlement.SINGLEPLATFORM);
+								if(employeeService.saveEmployee(emp))
+								empTransferService.saveEmployeeTra(employeeT);
+								
+								boolean ft = false;
+								if (actores.getId() != null)
+									ft = true;
+								if (platformsActoresService.saveActores(actores)) {
+									if (ft)
+										workManagers.onEvents(WorkNames.ACTORES_MID,actores);
+									logger.info("添加员工同步为线下艺人成功!");
+								}
+							} else if (employeeT.getEmployeType() == EmployeType.TALENT) {
+								Talent talent = new Talent();
+								emp.setPosition(employeeT.getNewPosition());
+								emp.setDepart(employeeT.getNewDepart());
+								emp.setSupervisor(employeeT.getSupervisor());
+								emp.setEmployeType(EmployeType.TALENT);
+								employeeT.setEmpTransfer(EmpTransfer.PASSED);
+								talent.setName(emp.getName());
+								talent.setNumber(String.valueOf(emp.getNumber()));
+								talent.setAliasname(emp.getAliasname());
+								talent.setSex(emp.getSex());
+								talent.setPhone(emp.getPhone());
+								talent.setQq(emp.getQq());
+								talent.setBankCard(emp.getBankCard());
+								talent.setBankAddress(emp.getBankAddress());
+								talent.setGenrer(LineGenres.OFFLINE);
+								emp.setGenrer(Genres.TRANSFER);
+								talent.setBranchs(emp.getBranchs());
+								talent.setEmployee(emp);
+								talent.setCreateDT($date1);
+								if(employeeService.saveEmployee(emp))
+								empTransferService.saveEmployeeTra(employeeT);
+								
+								if (talentService.saveTalent(talent)) {
+									logger.info("添加员工同步为线下星探成功!");
+								}
+							}else if(employeeT.getEmployeType() == EmployeType.EMPLOYEE){
+								Managers managers = managerService.findManagerByEmpIdSession(emp.getId());
+								if (managers != null) {
+									emp.setPosition(employeeT.getNewPosition());
+									emp.setDepart(employeeT.getNewDepart());
+									emp.setSupervisor(employeeT.getSupervisor());
+									emp.setEmployeType(EmployeType.EMPLOYEE);
+									emp.setCreateDT($date1);
+									employeeT.setEmpTransfer(EmpTransfer.PASSED);
+									emp.setGenrer(Genres.TRANSFER);
+									if(employeeService.saveEmployee(emp))
+									empTransferService.saveEmployeeTra(employeeT);
+								}
+							}
+						}
+					}
+					/*employeeService.saveEmployee(emp);*/
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error("员工档案数据管理转岗同步", e);
+		}
+	}
+
+}

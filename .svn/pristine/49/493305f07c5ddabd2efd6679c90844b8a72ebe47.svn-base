@@ -1,0 +1,248 @@
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts"%>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>离职艺人 </title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<jsp:include page="common.jsp"></jsp:include>
+<jsp:include page="bootstarp.jsp"></jsp:include>
+<style>
+body {
+	height: 100%;
+	min-width: 200px;
+	overflow-x: hidden;
+	position: relative;
+}
+
+.yirentable tr {
+	height: 30px;
+	line-height: 30px;
+}
+
+.yirentable tr:hover {
+	background-color: #ddd;
+}
+
+.yirentable .firsttr:hover {
+	background-color: #fff;
+}
+
+.yirentable .selected {
+	background-color: #ddd;
+}
+</style>
+<script>
+
+	$(function() {
+		$(".loginout").click(function(data){
+				$.ajax({
+					type : "POST",
+					cache : false,
+					async : false,
+					url : "${pageContext.request.contextPath}/user/logout.do",
+					success : function(data) {
+						if(data.resultStatus == 200){
+							window.location.href="${pageContext.request.contextPath}/login.do";
+						}
+					}
+			    });			
+			});
+		
+		//加载数据
+		$(".right-onehalf span").click(function() {
+			var $self = $(this);
+			if (!$self.hasClass("spanchange")) {
+				$self.siblings("span").removeClass("spanchange");
+				$self.addClass("spanchange");
+				grid.search(searchParames);
+				$("#actoresForm select option").remove();
+			}
+		});
+		var grid = $.fn.bsgrid.init("searchTable",{
+			url : "${pageContext.request.contextPath}/actoresOnline/readPagesActoresLeave.do",
+			pageSizeSelect : true,
+			pageSize : pageSize,
+			pagingToolbarAlign : "left",
+			displayBlankRows : false,
+			displayPagingToolbarOnlyMultiPages : true
+		});
+	});
+</script>
+</head>
+<body class="custom-scroll">
+    <div class="right-one fsize18 fweightbold clearFix">
+	   		<div class="fl">
+	   			<span class="refresh fl"></span>
+	   		</div>
+	   		<div class="fr">
+	   			<span class="rName fl"></span>
+	   			<span class="username fl">${user.user.accounts}</span>
+	   			<span class="fl">, 欢迎来到<spring:message code="title"/></span>
+	   			<a href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+	   		</div>
+	   </div>> 
+<div class="rightPadd">
+	<div class="right-twohalf">
+	<span>首页</span>
+	<span>></span>
+	<span>平台人员</span>
+	<span>></span>
+	<span class="color99">离职艺人</span>
+</div>
+<div class="control">
+	<jsp:include page="attsCommon.jsp"></jsp:include>
+</div>
+<div class="custom-scroll thistable"  style="overflow:auto; background-color:#fff; ">
+	<table id="searchTable"class="table tablelist">
+		<tr class="firsttr">
+	        <th w_index="id" w_align="center"width="1%;"w_hidden="true">id</th>
+	        <th w_num="line" w_align="center" width="1%;">序号</th>
+	        <th w_index="number" w_align="center"width="1%;">员工号</th>
+	        <th w_index="realname" w_align="center"width="1%;">真实姓名</th>
+	        <th w_index="aliasname" w_align="center"width="1%;">艺名</th>
+	        <th w_index="sex" w_align="center"width="1%;">性别</th>
+		    <th w_index="phone" w_align="center"width="1%;">联系电话</th> 
+	        <th w_index="leaveMsg" w_align="center"width="1%;">离职原因</th>  
+	        <th w_index="genre" w_align="center"width="1%;">艺人类型</th> 
+	        <th w_index="probationSalary" w_align="center"width="1%;">试用期工资</th>
+	        <th w_index="genrer" w_align="center" width="1%;">转正状态</th>
+	        <th w_index="minimumGuarantee" w_align="center"width="1%;">保底</th>
+	        <th w_index="basicSalary" w_align="center"width="1%;">底薪</th>
+	        <th w_index="pushMoney" w_align="center"width="1%;">提成比例</th>
+	        <th w_index="signed" w_align="center"width="1%;">签约状态</th>
+	        <th w_index="createDT" w_align="center"width="1%;">创建时间</th>
+	        <th w_align="center">备注</th> 
+   		</tr>
+</table>
+<form id="actoresForm" style="display:none;margin-left:20px;margin-right:20px;">
+	<input type="hidden" name="id" id="id"> 
+	<p>请输入员工号或真实姓名</p>
+	<p>
+		<input type="text" name="name" id="name" style="width:200px;" maxlength="400" class="input">
+		<span class="next" style="margin-left:20px;border: 1px solid #ddd;text-align: center;height: 30px;line-height: 30px;display: inline-block;color: #fff;background-color: #599eeb;width: auto;padding: 0px 20px;border-radius: 5px;margin-right: 10px;cursor: pointer;">搜索</span>
+	</p>
+	<div class="custom-scroll" style="position:relative;margin-top:20px;height:150px;overflow:auto;padding:10px 20px;;border:1px solid #ddd">
+	<table style="width:100%" class="yirentable">
+		<tr class="firsttr">
+			<th hidden>id</th>
+			<th width="33%">员工号</th>
+			<th width="33%">真实姓名</th>
+			<th width="34%">艺名</th>
+		</tr>
+	</table>
+	</div>
+	<p><input type="hidden" name="id" id="id" value="">
+	<span class="next2" style="margin-right:20px;border: 1px solid #ddd;text-align: center;height: 38px;line-height: 38px;display: inline-block;color: #fff;background-color: #599eeb;width: 90px;padding: 0px 20px;border-radius: 5px;margin-right: 10px;cursor: pointer;">添加</span>&nbsp;&nbsp;&nbsp;&nbsp;
+	<input class="cancel" type="reset" name="Input" value="关闭"></p>
+</form>
+<form action="${pageContext.request.contextPath}/actoresOnline/saveActores.do" method="post" enctype="multipart/form-data" id="actoresSaveForm" style="display:none;margin-left:20px;margin-right:20px;">
+			<table class="table">
+				<tr>
+					<td colspan="2"style="width:50%;padding:0;border:none;"></td>
+					<td colspan="2"style="width:50%;padding:0;border:none;"></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">真实姓名：<label style="color: red;">*</label></td>
+					<td><input type="text" name="realname" id="realname" style="width:200px;"></td>
+					<td style="text-align: right;">艺名：<label style="color: red;">*</label></td>
+					<td><input type="text" name="aliasname" id="aliasname" style="width:200px;"></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">联系电话：<label style="color: red;">*</label></td>
+					<td><input type="text" name="phone" id="phone" style="width:200px;"></td>
+					<td style="text-align: right;">性别：<label style="color: red;">*</label></td>
+					<td>
+						<select id="sex" name="sex"  style="width:200px;">
+							<option value="WOMAN">女</option>
+							<option value="MAN">男</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">艺人类型：<label style="color: red;">*</label></td>
+					<td>
+						<select id="genre" name="genre" style="width:200px;"> 
+							<option value="OFFLINE">线下艺人</option>
+						</select>
+					</td>
+					<td style="text-align: right;">结算方式：<label style="color: red;">*</label></td>
+					<td>
+						<select id="settl" name="settl" style="width:200px;">
+							<!-- <option value="MULTIPLATFORM">多平台</option> -->
+							<option value="SINGLEPLATFORM">单平台</option>
+						</select>
+						<input type="checkbox" class="settlCheck" checked/>
+					</td>
+				</tr>
+				<tr>
+					<td class="rt" style="text-align: right;">试用期：<label style="color: red;">*</label></td>
+					<td>
+						<select id="probation" name="probation" style="width:150px;">
+							<option value="0">-</option>
+							<option value="1">1</option>
+							<option value="2" selected="selected">2</option>
+							<option value="3">3</option>
+							<option value="4">4</option>
+							<option value="5">5</option>
+							<option value="6">6</option>
+						</select>个月
+					</td> 
+					<td style="text-align: right;">试用期工资：<label style="color: red;">*</label></td>
+					<td><input id="probationSalary" name="probationSalary" class="easyui-numberbox input" style="width:200px;"></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">保底 ：<label style="color: red;">*</label></td>
+					<td><input type="text" name="minimumGuarantee" id="minimumGuarantee" class="easyui-numberbox input" style="width:200px;"></td>
+					<td style="text-align: right;">底薪：<label style="color: red;">*</label></td>
+					<td><input id="basicSalary" name="basicSalary"  class="easyui-numberbox input" style="width:200px;"></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">提成比例：<label style="color: red;">*</label></td>
+					<td><input id="pushMoney" name="pushMoney" class="easyui-numberbox input" style="width:150px;">%</td>
+					<td style="text-align: right;">经济签约：<label style="color: red;">*</label></td>
+					<td>
+						<select id="signed" name="signed" style="width:200px;">
+							<option value="NO">否</option>
+							<option value="YES">是</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">身份证扫描件：</td>
+					<td><input  type="file" name="idImage" id="idImage"  style="width:200px;"></td>  
+					<td style="text-align: right;">入职时间 ：<label style="color: red;">*</label></td>
+					<td><input type="text" class="easyui-datebox" editable="false" name="entryTime" id="entryTime" style="width:200px;"></td>
+				</tr> 
+			 
+				<tr>
+					<td style="text-align: right;">身份证号：</td>
+					<td colspan="3"><input type="text" name="idcard" id="idcard" style="width:500px;"></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">现居地址：</td>
+					<td colspan="3"><input type="text" name="address" id="address" style="width:500px;"></td>
+				</tr>
+				<tr>
+					<td style="text-align:center;" colspan="4">
+						<input type="hidden" name="id" id="id">
+						<input type="hidden" name="empid" id="empid">
+						<input type="hidden" name="type" id="type">
+						<input type="hidden" name="genrer" id="genrer">
+						<input type="hidden" name="channelsId" id="channelsId">
+						<input type="hidden" name="loadTable" id="loadTable">
+						<input type="hidden" name="platId" id="platId">
+						<p>
+							<input class="ok" type="submit" value="提交">&nbsp;&nbsp;&nbsp;&nbsp;
+							<input class="cancel" type="reset" name="Input" value="关闭">
+						</p>
+					</td>
+				</tr>
+			</table>
+</form>
+</div>
+</div>
+</body>
+</html>

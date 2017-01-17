@@ -1,0 +1,323 @@
+package com.baofeng.oa.controller;
+
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.baofeng.commons.controller.BaseController;
+import com.baofeng.commons.entity.RoleDetailsAtts;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.DisciplinaryBean;
+import com.baofeng.oa.bean.EmployeeBean;
+import com.baofeng.oa.entity.BranchOffice;
+import com.baofeng.oa.entity.Disciplinary;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.service.IBranchOfficeService;
+import com.baofeng.oa.service.IDisciplinaryService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.utils.Constants;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.ResultMsg;
+
+/**
+ * 功能 ： 采购审核
+ * */
+@Controller
+@RequestMapping("/disciplinary")
+public class DisciplinaryController extends BaseController {
+
+	@Autowired
+	private IDisciplinaryService disciplinaryService;
+	@Autowired
+	private IBranchOfficeService branchOfficeService;
+	@Autowired
+	private IEmployeeService employeeService;
+
+	@RequestMapping(value = "/show", method = RequestMethod.GET)
+	public ModelAndView show(Integer branchs,Integer mId,HttpServletRequest request) {
+		ModelAndView mav = new ModelAndView(Constants.COREWEB_BUILDITEMS+ "/disciplinary");
+		List<RoleDetailsAtts> attsList = super.attributeRoleDetails(request,String.valueOf("disciplinary/show.do"));
+		branchs = branchs == null ? super.getSessionAttribute(request,Constants.CURRENT_BRANCHS) : branchs;
+		String branchsMsg = String.valueOf("");
+		BranchOffice boffice = this.branchOfficeService.readBranchOffice(branchs);
+		if (boffice != null)
+			branchsMsg = boffice.getIpgp();
+		mav.addObject("attsList", attsList);
+		mav.addObject("branchs", branchs);
+		mav.addObject("branchsMsg", branchsMsg);
+		return mav;
+	}
+
+	/**
+	 * 功能：获取头部数据
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/readBaseTabCommon", method = RequestMethod.POST)
+	public ResultMsg readBaseTabCommon(HttpServletRequest request, @RequestBody DisciplinaryBean bean) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		if (bean.getId() != null) {
+			Disciplinary disciplinary = this.disciplinaryService.readDisciplinary(bean.getId());
+				String auditMsg = "";
+					if (disciplinary != null) {
+						auditMsg = String.valueOf("处理中");
+						switch (disciplinary.getDepPass()) {
+						case UNKNOWN:
+							auditMsg = String.valueOf("处理中");
+							break;
+						case NOTPASS:
+							String failure = String.valueOf("未通过");
+							if (disciplinary != null && disciplinary.getRejecrMessage() != null)
+								failure = disciplinary.getRejecrMessage();
+							auditMsg = String.valueOf("拒绝原因:" + failure);
+							break;
+						case PASSED:
+							auditMsg = String.valueOf("通过");
+							break;
+						default:
+							break;
+						}
+						msg.setExData(disciplinary);
+					}
+				msg.setResultMessage(auditMsg);
+				msg.setResultStatus(200);
+		} 
+		return msg;
+	}
+	
+	/**
+	 * 功能 ：查看原因El
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/notPass", method = RequestMethod.POST)
+	public ResultMsg checkReasonEl(@RequestBody DisciplinaryBean bean,HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		if (bean.getId() != null) {
+			Disciplinary disciplinary = this.disciplinaryService.readDisciplinary(bean.getId());
+			if (disciplinary != null) {
+				msg.setExData(disciplinary.getRejecrMessage());
+				msg.setResultMessage("success");
+				msg.setResultStatus(200);
+			}
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：分页数据
+	 * */
+	@ResponseBody
+	@SuppressWarnings("rawtypes")
+	@RequestMapping(value = "/readPages", method = RequestMethod.POST)
+	public NPageResult readPages(int pageSize, int curPage, String sortName,String sortOrder, String fastArg,Integer type, Integer id, Integer branchs,
+			HttpServletRequest request) {
+		NPageResult pages = null;
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (users != null) {
+			pages = this.disciplinaryService.readPages(pageSize, curPage,sortName, sortOrder, type,fastArg, id,super.searchFilter(request,branchs));
+		}
+		return pages;
+	}
+	
+	/**
+	 * 功能：保存 
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/save", method = RequestMethod.POST)
+	public ResultMsg saveDisciplinary(@RequestBody DisciplinaryBean bean, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.disciplinaryService.saveDisciplinary(bean, users, branchs, request)) {
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+
+	/**
+	 * 功能：编辑
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/editDisciplinary", method = RequestMethod.GET)
+	public ResultMsg readDisciplinaryBean(Integer id) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		DisciplinaryBean disciplinary = this.disciplinaryService.readDisciplinaryBean(id);
+		if (disciplinary != null) {
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+			msg.setData(disciplinary);
+		}
+		return msg;
+	}
+	@ResponseBody
+	@RequestMapping(value = "/readEmp", method = RequestMethod.POST)
+	public ResultMsg readEmp(String num) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		Employee emp = this.employeeService.readEmployeeByNumber(Integer.valueOf(num));
+		if (emp != null) {
+			DisciplinaryBean bean = new DisciplinaryBean();
+			bean.setName(emp.getName());
+			bean.setAliasname(emp.getAliasname());
+			bean.setPosId(emp.getPosition().getId());
+			bean.setPosName(emp.getPosition().getName());
+			bean.setDepId(emp.getDepart().getId());
+			bean.setDepName(emp.getDepart().getName());
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+			msg.setData(bean);
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：删除
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/delete", method = RequestMethod.GET)
+	public ResultMsg delete(String id, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (id != null && id.trim().length() > 0) {
+			List<String> list = null;
+			if (id.indexOf(",") != -1) {
+				String[] ids = id.split(",");
+				list = Arrays.asList(ids);
+			} else {
+				list = new ArrayList<String>();
+				list.add(id);
+			}
+		if (this.disciplinaryService.delete(list,users, request)) {
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+			}
+		}
+		return msg;
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/editEmp", method = RequestMethod.GET)
+	public ResultMsg readUser( HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		Employee emp = this.employeeService.readEmployeeByNumber(users.getUser().getNumber());
+		EmployeeBean employeeBean = new EmployeeBean();
+		if (emp != null) {
+			employeeBean.setId(emp.getId());
+			employeeBean.setName(emp.getName());
+			employeeBean.setAliasname(emp.getAliasname());
+			employeeBean.setNum(emp.getNumber().toString());
+			msg.setData(employeeBean);
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+		}else{
+			employeeBean.setId(users.getUser().getId());
+			employeeBean.setName(users.getUser().getAccounts());
+			employeeBean.setAliasname("");
+			if (users.getUser().getNumber()!= null) {
+				employeeBean.setNum(String.valueOf(users.getUser().getNumber()));
+			}else{
+				employeeBean.setNum("");
+			}
+			msg.setData(employeeBean);
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能 ： 部门通过
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/deptpass", method = RequestMethod.POST)
+	public ResultMsg deptPass(String id,HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("error");
+		msg.setResultStatus(100);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (id != null && id.trim().length() > 0) {
+			List<String> list = null;
+			if (id.indexOf(",") != -1) {
+				String[] ids = id.split(",");
+				list = Arrays.asList(ids);
+			} else {
+				list = new ArrayList<String>();
+				list.add(id);
+			}
+			if (this.disciplinaryService.updatedisciplinary(list, users, request)) {
+				msg.setResultMessage("success");
+				msg.setResultStatus(200);
+			}
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能 ：申请拒绝
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/reject", method = RequestMethod.POST)
+	public ResultMsg reject(@RequestBody DisciplinaryBean bean,HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("error");
+		msg.setResultStatus(100);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.disciplinaryService.updateReject(bean, users, request)) {
+			msg.setResultMessage("success");
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：保存 
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/saveDisc", method = RequestMethod.POST)
+	public ResultMsg saveDisc(@RequestBody DisciplinaryBean bean, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.disciplinaryService.saveDisc(bean, users, branchs, request)) {
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+	
+	/**
+	 * 导出excel
+	 * */
+	@RequestMapping(value = "/exportExcel", method = RequestMethod.GET)
+	public void exportExcel(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		List<Disciplinary> listOn = this.disciplinaryService.readAllDisciplinary(searchFilter(request));
+		HSSFWorkbook wb = this.disciplinaryService.export(listOn);
+		response.setContentType("application/vnd.ms-excel");
+		response.setHeader("Content-disposition", "attachment;filename=" + new Date().toString() + ".xls");
+		OutputStream ouputStream = response.getOutputStream();
+		wb.write(ouputStream);
+		ouputStream.flush();
+		ouputStream.close();
+	}
+	
+}

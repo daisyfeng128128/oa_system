@@ -1,0 +1,100 @@
+package com.baofeng.oa.entity;
+
+/**
+ * 功能：所有枚举
+ * */
+public class BaseEnums {
+
+	/** 转正状态 */
+	public enum Regular {
+		YES, NO
+	}
+
+	/** 签约状态 */
+	public enum ActoresSigned {
+		YES, NO
+	}
+
+	/** 劳务状态 */
+	public enum ActoresLabour {
+		SYSTEM, EPIBOLIC, OTHER
+	}
+
+	/** 结算方式 */
+	public enum Settlement {
+		SINGLEPLATFORM, MULTIPLATFORM
+	}
+
+	/** 户口类型 */
+	public enum Account {
+		CHENGZHEN, NONGCUN
+	}
+
+	/** 在线类型 */
+	public enum LineGenres {
+		ONLINE, OFFLINE
+	}
+
+	/** 平台类型 */
+	public enum PlatformGenre {
+		PAIMAI, ZHIBOJIAN
+	}
+
+	/** 收入类型 */
+	public enum PlatIncomeGenre {
+		SHUIQIAN, SHUIHOU, KAIPIAOSHUI
+	}
+
+	/** 审核状态 */
+	public enum Audit {
+		WRITE, AUDIT, PASS, FAILURE, FINALPASS
+	}
+
+	/** 发放工资状态 */
+	public enum Grant {
+		UNBILLED, PUBLISHED, UNKNOWN
+	}
+
+	/** 财务对账成功/失败 */
+	public enum Decide {
+		YES, NO
+	}
+
+	/** 调整薪资状态 */
+	public enum Adjust {
+		UNKNOWN, PASSED, FAILED
+	}
+
+	/** 面试状态 */
+	// 待处理，平台审核，待入职，未通过，已入职
+	public enum Interviews {
+		PENDING, CHECK, WAITENTRY, NOTPASS, PASS, PRETEST
+	}
+	
+	/** 登陆状态过期 */
+	public enum Overdue{
+		YES, NO 
+	}
+	
+	/** 预支薪资状态 */
+	//待审  通过  拒绝 未还款  已还款
+	public enum Advance {
+		UNKNOWN, PASSED, FAILED
+	}
+	
+	/** 还款状态 */
+	//未还款  已还款
+	public enum Repay {
+		NOTPASS, PASSED
+	}
+	//员工类型
+	//普通员工  艺人 星探  管理
+ 	public enum EmployeType{
+		EMPLOYEE,ACTORES,TALENT,MANAGER
+	}
+ 	/** 员工转职状态 */
+ 	//处理中  通过  
+ 	public enum EmpTransfer{
+ 		UNKNOWN, PASSED
+	}
+}

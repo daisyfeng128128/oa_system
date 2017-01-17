@@ -1,0 +1,580 @@
+package com.baofeng.oa.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baofeng.commons.dao.UsersDAO;
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.commons.entity.Operator;
+import com.baofeng.commons.entity.Operator.Genres;
+import com.baofeng.commons.entity.Operator.Sex;
+import com.baofeng.commons.entity.RoleDetailsAtts;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.commons.service.IMonitorLogService;
+import com.baofeng.oa.bean.ActoresOfflineBean;
+import com.baofeng.oa.bean.ActoresOnlineBean;
+import com.baofeng.oa.dao.ActoresDAO;
+import com.baofeng.oa.dao.ActoresLeaveDAO;
+import com.baofeng.oa.entity.Actores;
+import com.baofeng.oa.entity.ActoresLeave;
+import com.baofeng.oa.entity.BaseEnums.ActoresLabour;
+import com.baofeng.oa.entity.BaseEnums.ActoresSigned;
+import com.baofeng.oa.entity.BaseEnums.LineGenres;
+import com.baofeng.oa.entity.BranchOffice;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.entity.Platforms;
+import com.baofeng.oa.entity.PlatformsActores;
+import com.baofeng.oa.service.IActoresService;
+import com.baofeng.oa.service.IBranchOfficeService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.oa.service.IPlatformsActoresService;
+import com.baofeng.utils.Constants;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+import com.baofeng.work.WorkManagers;
+import com.baofeng.work.WorkNames;
+
+@Service("actoresOnlineService")
+public class ActoresServiceImpl implements IActoresService {
+	@Autowired
+	private WorkManagers workManagers;
+	@Autowired
+	private UsersDAO usersDAO;
+	@Autowired
+	private ActoresDAO actoresDAO;
+	@Autowired
+	private ActoresLeaveDAO actoresLeaveDAO;
+	@Autowired
+	private IMonitorLogService monitorLogService;
+	@Autowired
+	private IPlatformsActoresService platformsActoresService;
+	@Autowired
+	private IBranchOfficeService branchOfficeService;
+	@Autowired
+	private IEmployeeService employeeService;
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public NPageResult<?> readPagesActoresLeave(int pageSize, int curPage, String sortName, String sortOrder, SearchFilter filter) {
+		NPageResult rows = this.actoresLeaveDAO.readPagesActoresLeave(pageSize, curPage, sortName, sortOrder, filter);
+		if (rows != null && rows.getData().size() > 0) {
+			List<ActoresOnlineBean> listBean = new ArrayList<ActoresOnlineBean>();
+			BranchOffice branchOffice = null;
+			for (Object o : rows.getData()) {
+				ActoresLeave post = (ActoresLeave) o;
+				ActoresOnlineBean bean = new ActoresOnlineBean();
+
+				if (post.getId() != null) {
+					bean.setId(post.getId());
+					if (post.getActores().getNumber() != null && post.getActores().getNumber().intValue() > 0) {
+						if (branchOffice == null)
+							branchOffice = this.branchOfficeService.readBranchOffice(post.getBranchs());
+						if (branchOffice != null)
+							bean.setNumber(branchOffice.getNumberHead() + String.format("%04d", post.getActores().getNumber()));
+						else
+							bean.setNumber(String.format("%04d", post.getActores().getNumber()));
+					} else
+						bean.setNumber("N/A");
+
+					bean.setLeaveMsg(post.getLeaveMsg());
+					bean.setAddress(post.getActores().getAddress());
+					bean.setPhone(post.getActores().getPhone());
+					bean.setQq(post.getActores().getQq());
+					bean.setIdcard(post.getActores().getIdcard());
+					bean.setRealname(post.getActores().getRealname());
+					bean.setAliasname(post.getActores().getAliasname());
+					bean.setEmail(post.getActores().getEmail());
+					bean.setEntryTime(post.getActores().getEntryTime());
+					bean.setSex(post.getActores().getSex() == Sex.MAN ? "男" : "女");
+					bean.setGenre(post.getActores().getGenre() == LineGenres.ONLINE ? "线上艺人" : "线下艺人");
+
+					if (post.getActores().getGenrer() == Genres.SHIYONG) {
+						bean.setGenrer("试用");
+					} else if (post.getActores().getGenrer() == Genres.LIZHI) {
+						bean.setGenrer("离职");
+					}
+
+					if (post.getActores().getProbation() != null) {
+						bean.setProbation(post.getActores().getProbation().intValue() == 0 ? "-" : post.getActores().getProbation() + "个月");
+					} else {
+						bean.setProbation("-");
+					}
+					bean.setCreateDT(post.getCreateDT());
+					bean.setProbationSalary(post.getActores().getProbationSalary() == null ? "0.00" : String.format("%.2f", post.getActores()
+							.getProbationSalary()));
+					bean.setBasicSalary(post.getActores().getBasicSalary() == null ? "0.00" : String.format("%.2f", post.getActores().getBasicSalary()));
+					bean.setMinimumGuarantee(post.getActores().getMinimumGuarantee() == null ? "0.00" : String.format("%.2f", post.getActores()
+							.getMinimumGuarantee()));
+					bean.setPushMoney(post.getActores().getPushMoney() == null ? "-" : String.format("%d%% %n", post.getActores().getPushMoney()));
+					bean.setSigned(post.getActores().getLabour() == ActoresLabour.SYSTEM ? "公司签约"
+							: (post.getActores().getSigned() == ActoresSigned.YES ? "经济签约" : "还未签约"));
+				}
+				listBean.add(bean);
+			}
+			rows.setData(listBean);
+		}
+		return rows;
+
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public NPageResult<?> readPagesActoresOnline(int pageSize, int curPage, String sortName, String sortOrder, String genre, String isleave,
+			SearchFilter filter, List<RoleDetailsAtts> platList, List<RoleDetailsAtts> attsList, RoleUsers users, String srealname, String saliasname,
+			String sphone, String fastArg, String snumber) {
+		NPageResult rows = null;
+		Operator operator = users.getUser();
+		boolean isViews = false;
+		for (RoleDetailsAtts atts : attsList) {
+			if ("views".equals(atts.getOpkey())) {
+				isViews = true;
+				break;
+			}
+		}
+		if (operator.getGenrer() == Genres.MANAGER || operator.getGenrer() == Genres.SUPERS || Boolean.valueOf(isViews)) {
+			rows = this.actoresDAO.readPagesActoresOnline(pageSize, curPage, sortName, sortOrder, genre, isleave, filter, srealname, saliasname, sphone,fastArg, snumber);
+		} else {
+			rows = this.actoresDAO.readPagesPlatformsActores(pageSize, curPage, sortName, sortOrder, genre, isleave, filter, platList, operator,users, srealname,saliasname, sphone, fastArg, snumber);
+		}
+		if (rows != null && rows.getData().size() > 0) {
+			List<ActoresOnlineBean> listBean = new ArrayList<ActoresOnlineBean>();
+			BranchOffice branchOffice = null;
+			for (Object o : rows.getData()) {
+				Actores post = null;
+				if (o instanceof PlatformsActores) {
+					PlatformsActores act = (PlatformsActores) o;
+					post = act.getActores();
+				} else if (o instanceof Actores) {
+					post = (Actores) o;
+				}
+				ActoresOnlineBean bean = new ActoresOnlineBean();
+				if (post.getId() != null) {
+					bean.setId(post.getId());
+					if (post.getNumber() != null && post.getNumber().intValue() > 0) {
+						if (branchOffice == null)
+							branchOffice = this.branchOfficeService.readBranchOffice(post.getBranchs());
+						if (branchOffice != null)
+							bean.setNumber(branchOffice.getNumberHead() + String.format("%04d", post.getNumber()));
+						else
+							bean.setNumber(String.format("%04d", post.getNumber()));
+					} else
+						bean.setNumber("N/A");
+					String platNames = this.platformsActoresService.readAllPlatNames(post.getId());
+					bean.setPlatNames(platNames);
+					bean.setLinkUrl(post.getLinkUrl() == null ? "#" : "".equals(post.getLinkUrl().trim()) ? "#" : post.getLinkUrl());
+					bean.setAddress(post.getAddress());
+					bean.setPhone(post.getPhone());
+					bean.setQq(post.getQq());
+					bean.setIdcard(post.getIdcard());
+					bean.setRealname(post.getRealname());
+					bean.setAliasname(post.getAliasname());
+					bean.setEmail(post.getEmail());
+					bean.setEntryTime(post.getEntryTime());
+					bean.setBankCard(post.getBankCard());
+					bean.setBankAddress(post.getBankAddress());
+					bean.setShareBankAddress(post.getShareBankAddress());
+					bean.setShareBankCard(post.getShareBankCard());
+					bean.setSex(post.getSex() == Sex.MAN ? "男" : "女");
+					bean.setGenre(post.getGenre() == LineGenres.ONLINE ? "线上艺人" : "线下艺人");
+					if (post.getGenrer() == Genres.SHIYONG) {
+						bean.setGenrer("试用");
+					} else if (post.getGenrer() == Genres.ZHENGSHI) {
+						bean.setGenrer("正式");
+					}
+					bean.setCreateDT(post.getCreateDT());
+					bean.setProbationSalary(post.getProbationSalary() == null ? "0.00" : String.format("%.2f", post.getProbationSalary()));
+					bean.setBasicSalary(post.getBasicSalary() == null ? "0.00" : String.format("%.2f", post.getBasicSalary()));
+					bean.setMinimumGuarantee(post.getMinimumGuarantee() == null ? "0.00" : String.format("%.2f", post.getMinimumGuarantee()));
+					bean.setPushMoney(post.getPushMoney() == null ? "-" : String.format("%d%% %n", post.getPushMoney()));
+
+					bean.setSigned(post.getLabour() == ActoresLabour.SYSTEM ? "公司签约" : (post.getSigned() == ActoresSigned.YES ? "经济签约" : "还未签约"));
+				}
+				listBean.add(bean);
+			}
+			rows.setData(listBean);
+		}
+		return rows;
+	}
+
+	@Override
+	public boolean addNewActores(Actores post, Integer pushMoney, Integer empid,/* 不知道原来干什么用的 */String beLiveTime, String loadTable, HttpServletRequest request) {
+		boolean ftnIndex = false;
+		if (post != null && post.getId() != null && post.getId().intValue() > 0) { // 修改
+			Actores $post = this.readActoresId(post.getId());
+			if ($post != null) {
+				ftnIndex = true;
+				if (post.getIdImage() != null && post.getIdImage().trim().length() > 0)
+					$post.setIdImage(post.getIdImage());
+				$post.setLinkUrl(post.getLinkUrl());
+				$post.setRealname(post.getRealname());
+				$post.setAliasname(post.getAliasname());
+				$post.setPhone(post.getPhone());
+				$post.setQq(post.getQq());
+				$post.setSex(post.getSex());
+				$post.setGenre(post.getGenre());
+				$post.setEntryTime(post.getEntryTime());
+				$post.setProbation(post.getProbation());
+				$post.setProbationSalary(post.getProbationSalary());
+				$post.setMinimumGuarantee(post.getMinimumGuarantee());
+				$post.setBasicSalary(post.getBasicSalary());
+				$post.setPushMoney(post.getPushMoney());
+				$post.setSigned(post.getSigned());
+				$post.setIdcard(post.getIdcard());
+				$post.setBankCard(post.getBankCard());
+				$post.setBankAddress(post.getBankAddress());
+				$post.setShareBankAddress(post.getShareBankAddress());
+				$post.setShareBankCard(post.getShareBankCard());
+				$post.setAddress(post.getAddress());
+				post = $post;
+			}
+			if (this.actoresDAO.saveActores(post)) {
+				if (empid != null && empid.intValue() > 0) {
+					this.monitorLogService.logsUpdate(request, "线下艺人: " + post.getRealname() + " ID: " + post.getId());
+				} else {
+					this.monitorLogService.logsUpdate(request, "线上艺人: " + post.getAliasname() + " ID: " + post.getId());
+				}
+
+				if (ftnIndex) {
+					this.workManagers.onEvents(WorkNames.ACTORES_MID, post);
+				}
+				return true;
+			}
+
+		} else {
+
+			if (this.actoresDAO.saveActores(post)) {
+				if (empid != null && empid.intValue() > 0) {
+					this.monitorLogService.logsAdd(request, "线下艺人: " + post.getRealname() + " ID: " + post.getId());
+				} else {
+					this.monitorLogService.logsAdd(request, "线上艺人: " + post.getAliasname() + " ID: " + post.getId());
+				}
+				
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public Actores readActoresById(Integer id) {
+		return this.actoresDAO.readActores(id);
+	}
+
+	public ActoresOnlineBean editActoresById(Integer id) {
+
+		if (id != null && id > 0) {
+			Actores post = this.actoresDAO.readActores(id);
+			ActoresOnlineBean bean = new ActoresOnlineBean();
+			bean.setId(post.getId());
+			bean.setIdImage(Constants.DEFAULT_HTTPIMAGES + "/" + post.getIdImage());
+			if (post.getNumber() != null && post.getNumber().intValue() > 0)
+				bean.setNumber(String.format("%04d", post.getNumber()));
+			else
+				bean.setNumber("N/A");
+			bean.setLinkUrl(post.getLinkUrl() != null ? post.getLinkUrl() : "");
+			bean.setAddress(post.getAddress());
+			bean.setPhone(post.getPhone());
+			bean.setQq(post.getQq());
+			bean.setIdcard(post.getIdcard());
+			bean.setRealname(post.getRealname());
+			bean.setAliasname(post.getAliasname());
+			bean.setEmail(post.getEmail());
+			bean.setEntryTime(post.getEntryTime());
+			bean.setBankAddress(post.getBankAddress());
+			bean.setBankCard(post.getBankCard());
+			bean.setShareBankAddress(post.getShareBankAddress());
+			bean.setShareBankCard(post.getShareBankCard());
+			bean.setSex(post.getSex() == Sex.MAN ? "男" : "女");
+			bean.setGenre(post.getGenre() == LineGenres.ONLINE ? "线上艺人" : "线下艺人");
+
+			if (post.getGenrer() == Genres.SHIYONG) {
+				bean.setGenrer("试用");
+			} else if (post.getGenrer() == Genres.LIZHI) {
+				bean.setGenrer("离职");
+			} else if (post.getGenrer() == Genres.ZHENGSHI) {
+				bean.setGenrer("正式");
+			}
+
+			if (post.getProbation() != null) {
+				bean.setProbation(post.getProbation().intValue() == 0 ? "-" : post.getProbation().toString());
+			} else {
+				bean.setProbation("-");
+			}
+			bean.setCreateDT(post.getCreateDT());
+
+			bean.setProbationSalary(post.getProbationSalary() == null ? "0.00" : String.format("%.2f", post.getProbationSalary()));
+			bean.setBasicSalary(post.getBasicSalary() == null ? "0.00" : String.format("%.2f", post.getBasicSalary()));
+			bean.setMinimumGuarantee(post.getMinimumGuarantee() == null ? "0.00" : String.format("%.2f", post.getMinimumGuarantee()));
+			bean.setPushMoney(post.getPushMoney() == null ? "-" : String.format("%d%% %n", post.getPushMoney()));
+			bean.setSigned(post.getLabour() == ActoresLabour.SYSTEM ? "公司签约" : (post.getSigned() == ActoresSigned.YES ? "经济签约" : "还未签约"));
+
+			return bean;
+		}
+		return null;
+	}
+	//线下
+	public ActoresOfflineBean editActoresofflineById(Integer id) {
+		if (id != null && id > 0) {
+			Actores post = this.actoresDAO.readActores(id);
+			Employee emp = this.employeeService.readEmployeebyNumber(post.getNumber());
+			ActoresOfflineBean bean = new ActoresOfflineBean();
+			bean.setId(post.getId());
+			bean.setIdImage(Constants.DEFAULT_HTTPIMAGES + "/" + post.getIdImage());
+			if (post.getNumber() != null && post.getNumber().intValue() > 0)
+				bean.setNumber(String.format("%04d", post.getNumber()));
+			else
+				bean.setNumber("N/A");
+			bean.setLinkUrl(post.getLinkUrl() != null ? post.getLinkUrl() : "");
+			bean.setAddress(post.getAddress());
+			bean.setPhone(post.getPhone());
+			bean.setQq(post.getQq());
+			bean.setIdcard(post.getIdcard());
+			bean.setRealname(post.getRealname());
+			bean.setAliasname(post.getAliasname());
+			bean.setEmail(post.getEmail());
+			bean.setEntryTime(post.getEntryTime());
+			bean.setBankAddress(emp.getBankAddress());
+			bean.setBankCard(emp.getBankCard());
+			bean.setShareBankAddress(emp.getShareBankAddress());
+			bean.setShareBankCard(emp.getShareBankCard());
+			bean.setSex(post.getSex() == Sex.MAN ? "男" : "女");
+			bean.setGenre(post.getGenre() == LineGenres.ONLINE ? "线上艺人" : "线下艺人");
+
+			if (post.getGenrer() == Genres.SHIYONG) {
+				bean.setGenrer("试用");
+			} else if (post.getGenrer() == Genres.LIZHI) {
+				bean.setGenrer("离职");
+			} else if (post.getGenrer() == Genres.ZHENGSHI) {
+				bean.setGenrer("正式");
+			}
+
+			if (post.getProbation() != null) {
+				bean.setProbation(post.getProbation().intValue() == 0 ? "-" : post.getProbation().toString());
+			} else {
+				bean.setProbation("-");
+			}
+			bean.setCreateDT(post.getCreateDT());
+
+			bean.setProbationSalary(post.getProbationSalary() == null ? "0.00" : String.format("%.2f", post.getProbationSalary()));
+			bean.setBasicSalary(post.getBasicSalary() == null ? "0.00" : String.format("%.2f", post.getBasicSalary()));
+			bean.setMinimumGuarantee(post.getMinimumGuarantee() == null ? "0.00" : String.format("%.2f", post.getMinimumGuarantee()));
+			bean.setPushMoney(post.getPushMoney() == null ? "-" : String.format("%d%% %n", post.getPushMoney()));
+			bean.setSigned(post.getLabour() == ActoresLabour.SYSTEM ? "公司签约" : (post.getSigned() == ActoresSigned.YES ? "经济签约" : "还未签约"));
+
+			return bean;
+		}
+		return null;
+	}
+
+	@Override
+	public boolean deleteActores(Integer id, HttpServletRequest request) {
+		if (id != null && id.intValue() > 0) {
+			Actores actores = this.actoresDAO.readActoresOnline(id);
+
+			if (actores != null) {
+				actores.setStatus(EntityStatus.DELETED);
+				if (this.actoresDAO.saveActores(actores)) {
+					this.monitorLogService.logsDelete(request, "艺人: " + actores.getAliasname() + " ID: " + actores.getId());
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public Actores readActoresId(Integer id) {
+		if (id != null && id > 0) {
+			Actores actores = this.actoresDAO.readActores(id);
+			return actores;
+		}
+		return null;
+	}
+
+	@Override
+	public Actores readActoresByPhone(String phone) {
+		if (phone != null && phone.length() > 0) {
+			Actores actores = this.actoresDAO.readActoresByphone(phone);
+			return actores;
+		}
+		return null;
+	}
+
+	@Override
+	public boolean readActoresByNum(Integer num) {
+		if (num != null && num.intValue() > 0) {
+			Actores actores = this.actoresDAO.readActoresByNum(num);
+			if (actores != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// 离职/转正
+	@Override
+	public boolean updateActorsOnline(Integer id, Integer type, String reason, HttpServletRequest request) {
+		if (id != null) {
+			Actores actores = this.readActoresId(id);
+			if (actores != null) {
+				if (type == 1) { // 转正
+					actores.setGenrer(Genres.ZHENGSHI);
+					if (this.actoresDAO.saveActores(actores)) {
+						this.workManagers.onEvents(WorkNames.ACTORES, actores);
+						this.monitorLogService.logsUpdate(request, "艺人: " + actores.getAliasname() + " ID: " + actores.getId() + "  (转正)");
+						return true;
+
+					}
+
+				} else if (type == 2) {
+					actores.setGenrer(Genres.LIZHI);
+					RoleUsers users = (RoleUsers) this.usersDAO.readRoleUsersByUserId(actores.getId());
+					if (users != null) {
+						users.setUser(null);
+						users.getDetails().clear();
+						this.usersDAO.getBaseDAO().delete(users);
+					}
+					ActoresLeave actores1 = new ActoresLeave();
+					actores1.setBranchs(actores.getBranchs());
+					actores1.setLeaveMsg(reason);
+					actores1.setActores(actores);
+					this.actoresLeaveDAO.saveactLeave(actores1);
+
+					if (this.actoresDAO.saveActores(actores)) {
+						this.monitorLogService.logsUpdate(request, "艺人: " + actores.getAliasname() + " ID: " + actores.getId() + "  (离职)");
+						return true;
+
+					}
+				}
+
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public Actores findActoresBySession(Integer empId) {
+		return this.actoresDAO.findActoresBySession(empId);
+	}
+
+	@Override
+	public boolean saveActoresBySession(Actores actores) {
+		return this.actoresDAO.saveActoresBySession(actores);
+	}
+
+	@Override
+	public List<Actores> findAllActoresOffline() {
+		return this.actoresDAO.findAllActoresOffline();
+	}
+
+	@Override
+	public List<Actores> findAllActoresOnline() {
+		return this.actoresDAO.findAllActoresOnline();
+	}
+
+	@Override
+	public Actores findActoresById(Integer offlineActoreId) {
+		return this.actoresDAO.findActoresById(offlineActoreId);
+	}
+
+	@Override
+	public boolean addActoresLinkUrl(Actores post) {
+		Actores actores = this.actoresDAO.readActores(post.getId());
+		if (actores != null) {
+			actores.setLinkUrl(post.getLinkUrl());
+			if (this.actoresDAO.saveActores(actores)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean addLastNewActores(Actores post, Integer pushMoney, Integer empid, String beLiveTime, String loadTable, Integer channel, Integer plat,/* 最新开播时间 */
+			String beliveTime, HttpServletRequest request) {
+		boolean ftnIndex = false;
+		if (post != null && post.getId() != null && post.getId().intValue() > 0) { // 修改
+			Actores $post = this.readActoresId(post.getId());
+			if ($post != null) {
+				ftnIndex = true;
+				if (post.getIdImage() != null && post.getIdImage().trim().length() > 0)
+					$post.setIdImage(post.getIdImage());
+				$post.setLinkUrl(post.getLinkUrl());
+				$post.setRealname(post.getRealname());
+				$post.setAliasname(post.getAliasname());
+				$post.setPhone(post.getPhone());
+				$post.setQq(post.getQq());
+				$post.setSex(post.getSex());
+				$post.setGenre(post.getGenre());
+				$post.setEntryTime(post.getEntryTime());
+				$post.setProbation(post.getProbation());
+				$post.setSigned(post.getSigned());
+				$post.setIdcard(post.getIdcard());
+				$post.setBankCard(post.getBankCard());
+				$post.setBankAddress(post.getBankAddress());
+				$post.setShareBankAddress(post.getShareBankAddress());
+				$post.setShareBankCard(post.getShareBankCard());
+				$post.setAddress(post.getAddress());
+				$post.setPushMoney(post.getPushMoney() == null ? new Integer(0) : post.getPushMoney());
+				$post.setBasicSalary(post.getBasicSalary() == null ? new Float(0) : post.getBasicSalary());
+				$post.setMinimumGuarantee(post.getMinimumGuarantee() == null ? new Float(0) : post.getMinimumGuarantee());
+				post = $post;
+			}
+			if (this.actoresDAO.saveActores(post)) {
+				if (empid != null && empid.intValue() > 0) {
+					this.monitorLogService.logsUpdate(
+							request,
+							"线下艺人" + post.getRealname() + ",id:" + post.getId() + ",n: " + post.getNumber() + ",b:" + post.getBasicSalary() + ",p:"
+									+ post.getPushMoney());
+				} else {
+					this.monitorLogService.logsUpdate(request, "线上艺人" + post.getAliasname() + ",id:" + post.getId() + ",b:" + post.getMinimumGuarantee()
+							+ ",p:" + post.getPushMoney());
+				}
+
+				if (ftnIndex) {
+					this.workManagers.onEvents(WorkNames.ACTORES_MID, post);
+				}
+				return true;
+			}
+		} else {
+			if (this.actoresDAO.saveActores(post)) {
+				if (empid != null && empid.intValue() > 0) {
+					this.monitorLogService.logsAdd(request, "线下艺人: " + post.getRealname() + " ID: " + post.getId());
+				} else {
+					this.monitorLogService.logsAdd(request, "线上艺人: " + post.getAliasname() + " ID: " + post.getId());
+				}
+				if (post.getGenre() == LineGenres.ONLINE) {
+					PlatformsActores pact = new PlatformsActores();
+					pact.setBranchs(post.getBranchs());
+					if (this.platformsActoresService.addNewActores(pact, post.getId(), plat, post.getMinimumGuarantee().toString(), channel, beliveTime,
+							pushMoney, request))
+						return true;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean checkActores(Actores post) {
+		if(post != null && post.getId() != null && post.getId().intValue()>0){
+			return false;
+		}else{
+			if(this.actoresDAO.checkActores(post)){
+				return true;
+			}
+			return false;
+		}
+	}
+
+	@Override
+	public List<Platforms> finPlat(List<RoleDetailsAtts> platList, Integer id) {
+		return this.actoresDAO.findPlat(platList,id);
+	}
+}

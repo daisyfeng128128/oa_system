@@ -1,0 +1,888 @@
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts"%>
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts.Enabled"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>违纪处理</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<jsp:include page="common.jsp"></jsp:include>
+<jsp:include page="bootstarp.jsp"></jsp:include>
+<jsp:include page="treeview.jsp"></jsp:include>
+<style>
+body {
+	height: 100%;
+	min-width: 200px;
+	overflow-x: hidden;
+	position: relative;
+}
+.mustred {
+	margin-left: 10px;
+	color: #ff0000;
+}
+
+.mains {
+	width: 100%;
+	min-width: 1000px;
+	overflow: hidden;
+	background-color: #fff;
+}
+
+.tabBtn1{
+		width: 96px;
+		height: 32px;
+		text-align: center;
+		line-height: 32px;
+		background-color: #9370DB;
+		color: #fff;
+		border: none;
+		display: inline-block;
+		margin-right: 20px;
+		border-radius: 2px;
+	}
+
+.lefttree {
+	width: 15%;
+	margin-right: 15px;
+	height: 800px;
+	float: left;
+	overflow: scroll;
+}
+
+.rightbox {
+	width: 85%;
+	float: right;
+	overflow: auto;
+	margin-top: -800px;
+}
+
+.mustred {
+	margin-left: 10px;
+	color: #ff0000
+}
+
+.ok {
+	border: 1px solid #ddd;
+	text-align: center;
+	height: 38px;
+	line-height: 38px;
+	display: inline-block;
+	color: #fff;
+	background-color: #599eeb;
+	width: 90px;
+	border-radius: 5px;
+	margin-right: 20px;
+	cursor: pointer;
+	margin-top: 20px;
+}
+
+.control {
+	margin-left: -174px;
+}
+.control2 {
+/* 	margin-left: -500;
+ */	text-align: center;
+	left: 50%;
+	bottom: 1%;
+	}
+
+#apply_lo {
+	border: 1px solid #ddd;
+}
+
+#applies_look .table {
+	white-space: inherit;
+}
+
+#apply_lo tr {
+	border-bottom: 1px solid #ddd;
+	height: 44px;
+	line-height: 40px;
+	text-indent: 20px;
+}
+
+#qq {
+	margin-left: -20px;
+}
+
+.okok {
+	background-color: #ccc1d9;
+}
+
+</style>
+<script>
+$(function () {
+
+		$(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+	
+        $(".control .add").click(function() {
+			var $chuangkou = $("#addpunish");
+			$.basewindow("新增违纪单", $chuangkou,1250, 400);
+			$(".basewindow").addClass("custom-scroll");
+		})
+
+	    //修改
+		$(".control .mid").click(function(){
+				var id =  grid.getCheckedValues('id');
+				if(id != ""){
+				var $chuangkou = $("#addpunish");
+					var editurl = "${pageContext.request.contextPath}/disciplinary/editDisciplinary.do";
+				$.ajax({
+					type : "get",
+					dataType : "json",
+					url : editurl,
+					data : "id=" + id,
+					show : "slide",
+					success : function(data) {
+					    var $data =data.data;
+						$("#addpunish #id").text($data.id);
+						$("#addpunish #name").text($data.name);
+						$("#addpunish #num").val($data.num);
+						$("#addpunish #aliasname").text($data.aliasname);
+						$("#addpunish #posName").text($data.posName);
+						$("#addpunish #depName").text($data.depName);
+						$("#addpunish #applyDT").datebox("setValue",$data.applyDT);
+						$("#addpunish #disciplinary").val($data.disciplinary);
+						$("#addpunish #fname").val($data.fname);
+						$("#addpunish #punishmentItems").val($data.punishmentItems);
+						$("#addpunish #punishRemarks").val($data.punishRemarks);
+					},
+					error : function(data) {
+					}
+					});
+				$.basewindow("修改违纪单",$chuangkou, 1250, 400);
+				$(".basewindow").addClass("custom-scroll");
+				$chuangkou.css({ "display" : "block" });
+		        return false;
+			}else {
+				$.threesecond("请先选择", 200, 100, 1000);
+			}
+		})
+	     
+		$("#addpunish #ok").click(function(){
+		    var id = $("#addpunish #id").html();
+		    var ids = $("#addpunish #ids").html();
+		    var name = $("#addpunish #name").html();
+		    var num = $("#addpunish #num").val();
+		    var aliasname = $("#addpunish #aliasname").html();
+		    var posId = $("#addpunish #posId").html();
+		    var depId = $("#addpunish #depId").html();
+		    var applyDT = $("#applyDT").datebox("getValue");
+		    var disciplinary = $("#disciplinary").val();
+		    var fname = $("#fname").val();
+		    var punishmentItems = $("#punishmentItems").val();
+		    var punishRemarks = $("#punishRemarks").val();
+		  
+			if(!applyDT){
+			    $.threetop("申请日期不能为空!");
+			    return false;
+			}
+			var reg = /^[1-9]\d*$/;  
+			if(!reg.test(disciplinary)){
+			    $.threetop("数量必须为正整数");
+			    return false;
+			}
+			if(!disciplinary){
+			    $.threetop("处罚金额不能为空!");
+			    return false;
+			}
+			if(!fname){
+			    $.threetop("制单人不能为空!");
+			    return false;
+			}
+			if(!punishmentItems){
+			    $.threetop("处罚事项不能为空!");
+			    return false;
+			}
+				
+	    		var punish = {
+	    			"id" : id,
+	    			"ids" : ids,
+		            "name" : name,
+		            "num": num,
+		            "aliasname": aliasname,
+		            "depId": depId,
+		            "posId": posId,
+		            "applyDT": applyDT,
+		            "disciplinary": disciplinary,
+		            "fname": fname,
+		            "punishmentItems": punishmentItems,
+		            "punishRemarks": punishRemarks
+		    	}
+		    	
+		    $.ajax({
+		        type : "POST",
+				url : "${pageContext.request.contextPath}/disciplinary/save.do",
+				cache: false,
+		        data: JSON.stringify(punish),
+		        contentType: 'application/json; charset=utf-8',
+		        success:function(data){
+		            if (data.resultStatus == 200) {
+						$(".zhezhao-basewindow").hide();
+						$(".basewindow").hide();
+						$("#addpunish").hide();
+						$('body').append($("#addpunish"));
+						grid.refreshPage();
+					}
+		        }
+		    })
+		})
+		
+		$(".del").click(function(){
+			var ids =  grid.getCheckedValues('id');
+		    if (ids != "") {
+		        $.yesorno("是否删除？",300,160,function() {
+				var editurl = "${pageContext.request.contextPath}/disciplinary/delete.do";
+				$.ajax({
+					type : "get",
+					cache : false,
+					url : editurl,
+					data : "id=" + ids,
+					success : function(data) {
+					    if (data.resultStatus == 200) {
+					        $.threesecond("删除成功", 200, 100, 1000);
+							grid.refreshPage();
+						} 
+					},
+					error : function(data) {
+					}
+				});
+			
+			}, function() {
+				$.threesecond("看来还是手下留情了!",
+						200, 100, 1000);
+			});
+			} else {
+				$.threesecond("请先选择", 200, 100, 1000);
+			}
+		})
+		
+		 $(".control .pay").click(function() {
+			var id =  grid.getCheckedValues('id');
+			if(id != ""){
+			var $chuangkou = $("#addtreatment");
+				$.ajax({
+				type : "get",
+				dataType : "json",
+				url : "${pageContext.request.contextPath}/disciplinary/editDis.do",
+				data : "id=" + id,
+				show : "slide",
+				success : function(data) {
+				    var $data =data.data;
+					$("#addtreatment #payee").text($data.name);
+					$("#addtreatment #disciplinary").text($data.disciplinary);
+				},
+				error : function(data) {
+				}
+				});
+			$.basewindow("违纪处理", $chuangkou,1000, 400);
+			$(".basewindow").addClass("custom-scroll");
+			}else {
+				$.threesecond("请先选择", 200, 100, 1000);
+			}
+			
+		 })
+		
+		$("#addtreatment #ok").click(function(){
+			var id =  grid.getCheckedValues('id');
+			var id1;
+			for(var i=0;i<id.length;i++){
+				 id1=id[i];
+			}
+		    var payee = $("#addtreatment #payee").html();
+		    var completeDT = $("#completeDT").datebox("getValue");
+		    var payPerson = $("#payPerson").val();
+		    var punishment = $("#punishment").val();
+		    var punishMoney = $("#punishMoney").val();
+		    var punishmentType = $("#punishmentType").val();
+		    var payRemarks = $("#payRemarks").val();
+		    var residualMoney = $("#residualMoney").val();
+		  
+			if(!completeDT){
+			    $.threetop("申请日期不能为空!");
+			    return false;
+			}
+			var reg = /^[1-9]\d*$/;  
+			if(!reg.test(punishMoney)){
+			    $.threetop("处罚金额必须为正整数");
+			    return false;
+			}
+			if(!punishMoney){
+			    $.threetop("处罚金额不能为空!");
+			    return false;
+			}
+			if(!payPerson){
+			    $.threetop("缴纳人不能为空!");
+			    return false;
+			}
+			if(!punishment){
+			    $.threetop("交款状态不能为空!");
+			    return false;
+			}
+	    	var punish = {
+	    		"id1" : id1,
+	    		"payee" : payee,
+		        "completeDT" : completeDT,
+		        "payPerson" : payPerson,
+		        "punishment" : punishment,
+		        "punishMoney" : punishMoney,
+		        "residualMoney" : residualMoney,
+		        "punishmentType" : punishmentType,
+		        "payRemarks" : payRemarks
+		    }
+		    $.ajax({
+		        type : "POST",
+				url : "${pageContext.request.contextPath}/disciplinary/saveDisc.do",
+				cache: false,
+		        data: JSON.stringify(punish),
+		        contentType: 'application/json; charset=utf-8',
+		        success:function(data){
+		            if (data.resultStatus == 200) {
+						$(".zhezhao-basewindow").hide();
+						$(".basewindow").hide();
+						$("#addtreatment").hide();
+						$('body').append($("#addtreatment"));
+						grid.refreshPage();
+					}
+		        }
+		    })
+		})
+		
+		$(".control .deptpass").click(function () {
+			var ids =  grid.getCheckedValues('id');
+           	if(ids != ''){
+	          var $chuangkou = $("#deptpass");
+			  $.basewindow("是否确认通过?", $chuangkou, 280, 200);
+			  $(".basewindow").addClass("custom-scroll");
+			}else{
+				$.threesecond("请勾选中数据", 200, 100, 1000);
+			}
+        });
+		
+		$("#deptpass #ok").click(function(){
+           		var ids =  grid.getCheckedValues('id');
+           		if(ids != ''){
+           			var proc =  grid.getCheckedValues('process');
+           			var p = new Array();
+					for(var i=0;i<proc.length;i++){
+						var process=proc[i];
+						if(process == "1"){
+							p.push(process);
+						}
+					}
+					if(proc.length == p.length){
+		   	         $.ajax({
+		   	           type : "POST",
+		   	           cache : false,
+		   	           url:  "${pageContext.request.contextPath}/disciplinary/deptpass.do",
+		   	           data: "id="+ids,
+		   	           success : function(data){
+		   	              			if(data.resultStatus == 200){
+		   	              			$.threesecond("部门确认!", 200, 100, 1000);
+	  	  	   						grid.refreshPage();
+	  	  	   					}
+	  	  	   	           }
+	  	  	   	      })
+	  	  	   	     }else{
+				   	    $.threesecond("审核状态不相同,请选择正确的状态",200, 100, 1000);
+				   	} 
+	            }else{
+		   	         $.threesecond("未选中数据", 200, 100, 1000);
+		   	     }
+		    });
+		        
+           $("#deptpass #jujue").click(function(){
+		         $('body').append($("#deptpass"));
+				 $("#deptpass").hide();
+		         $(".basewindow").hide();
+		         $(".zhezhao-basewindow").hide(); 
+		    	 var $chuangkou=$("#rejectE"); 
+	    	     $.basewindow("是否确认拒绝?", $chuangkou, 320, 300); 
+	             $(".basewindow").addClass("custom-scroll");
+	    	});  
+ 
+		   $("#rejectE #okok").click(function(){
+	            var ids =  grid.getCheckedValues('id');
+	          	if(ids != ""){
+	            	var rejectMsg = $("#rejectE #rejectMsg").val();
+		            var id;
+					for(var i=0;i<ids.length;i++){
+					     id=ids[i];
+					}
+		            var reject = {
+	                "id":id,
+	                "rejecrMessage":rejectMsg
+	            	};
+		            $.ajax({
+		                type: "POST",
+		                url: "${pageContext.request.contextPath}/disciplinary/reject.do",
+		                data: JSON.stringify(reject),
+		                contentType: "application/json; charset=utf-8",
+		                cache: false
+		            }).done(function (data) {
+		                if (data.resultStatus == 200) {
+		                    $.threesecond("部门已拒绝!", 200, 100, 1000);
+		                    grid.refreshPage();
+		                }
+		            }).error(function (jqXHR, textStatus, errorThrown) { });
+		            }else{
+						$.threesecond("请勾选中数据", 200, 100, 1000);
+				}
+	         });
+		
+		var grid = $.fn.bsgrid.init("searchTable", {
+	    	url: "${pageContext.request.contextPath}/disciplinary/readPages.do?branchs=${branchs}&date=${date}",
+	        pageSizeSelect: true,
+	        pageSize: pageSize,
+	        pagingToolbarAlign: "left",
+	        displayBlankRows: false,
+	        displayPagingToolbarOnlyMultiPages: true ,
+	         extend: {
+				settings:{
+					supportGridEdit:true,
+					supportGridEditTriggerEvent:"",
+					gridEditConfigs:{
+						depPass:{
+							build:function(edit,value,record, rowIndex, colIndex, options){
+								if (value =="处理中")
+									return "<span style='color:#0074ac'>"+value+"</span>"
+								if (value =="通过")
+									return "<span style='color:green'>"+value+"</span>"
+								if (value =="未通过")
+									return "<span style='color:red'>"+value+"</span><br/><a style='color:blue;' href='#' onclick='seanot("+record.id+")' >查看原因</a>"
+							}
+						},
+						punishment:{
+							build:function(edit,value){
+								if(value=="未交")
+									return "<span style='color:#0074ac'>"+value+"</span>"
+								if(value=="已交")
+									return "<span style='color:#e35d00'>"+value+"</span>"
+							}
+						}
+					}
+				}        	
+	        } 
+	    });
+    
+    	var ids ="";
+	    this.tree = [];
+			$.getJSON("${pageContext.request.contextPath}/empAttendance/readTree.do?t="+new Date().toString(),function(data){
+				 $("#tree").treeview({
+				  data: data.data,
+				  levels: 5,
+				  expanded:false,
+				  selectedBackColor:"#f3f3f3",
+				  selectedColor:"#333",
+				  icon: "glyphicon glyphicon-stop",
+	  			  //selectedIcon: "glyphicon glyphicon-stop",
+				  onNodeSelected: function(event, data) {
+				    ids=data.id;
+				    var click_type;
+				 		//加载数据
+					var searchParames={
+							    "id": ids
+							}
+					grid.search(searchParames);
+				  }
+				});	 
+			});
+		
+		//快速搜索
+		$("#fast").change(function() {
+		    var fastArg = $("#fast").val();
+			var searchParames={
+			    "fastArg": fastArg,
+			    "id":ids
+			}
+			grid.search(searchParames);
+		})
+		
+		$(".control2 .all").click(function() {
+			    var fastArg = 1;
+				var searchParames={
+				    "classQuery": fastArg
+				}
+				grid.search(searchParames);
+			})
+		$(".control2 .chou").click(function() {
+			    var fastArg = 2;
+				var searchParames={
+				    "classQuery": fastArg
+				}
+				grid.search(searchParames);
+			})
+		$(".control2 .dai").click(function() {
+			    var fastArg = 3;
+				var searchParames={
+				    "classQuery": fastArg
+				}
+				grid.search(searchParames);
+			})
+			$(".control2 .cent").click(function() {
+			    var fastArg = 4;
+				var searchParames={
+				    "classQuery": fastArg
+				}
+				grid.search(searchParames);
+			})
+			$(".control2 .pass").click(function() {
+			    var fastArg = 5;
+				var searchParames={
+				    "classQuery": fastArg
+				}
+				grid.search(searchParames);
+			})
+			$(".control2 .not").click(function() {
+			    var fastArg = 6;
+				var searchParames={
+				    "classQuery": fastArg
+				}
+				grid.search(searchParames);
+			})
+		
+		$("#upLoad").click(function(){    
+            window.location.href="${pageContext.request.contextPath}/disciplinary/exportExcel.do";  
+        });
+		
+		$("#searchTable").click(function() {
+			if (grid.getSelectedRow().length > 0) {
+				var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				var depPass = grid.getRowRecord(grid.getSelectedRow()).depPass;
+				var punishment = grid.getRowRecord(grid.getSelectedRow()).punishment;
+				$(".thistable .deptpass,.thistable .pay").attr("disabled","true").addClass("tablecancel");
+				if(depPass == "通过"){
+					if(punishment == "未交"){
+						$(".thistable .pay").removeAttr("disabled").removeClass("tablecancel");
+					}else if(punishment == "已交"){
+						$(".thistable .deptpass,.thistable .pay").attr("disabled","true").addClass("tablecancel");
+					}
+				}else if(depPass == "未通过"){
+					$(".thistable .deptpass,.thistable .pay").attr("disabled","true").addClass("tablecancel");
+				}else if(depPass == "处理中"){
+					$(".thistable .deptpass").removeAttr("disabled").removeClass("tablecancel");
+				}
+				}
+			});
+		
+		$.ajax({
+			type: "POST",
+			url: "${pageContext.request.contextPath}/disciplinary/readDateList.do",
+			data: "",
+			cache: false
+		}).done(function (data) {
+			$(data.data[0]).each(function(index,value){
+				var $self=$(this);
+				$(".right-twoRight .riqi ul").append("<li><a href='${pageContext.request.contextPath}/disciplinary/show.do?date="+value+"'>"+ value +"</a></li>")
+			});	
+		});
+			
+		$(".right-twoRight .riqi>span").click(function () {
+			if (!$(".right-twoRight .riqi ul").is(":animated")) {
+				$(".right-twoRight .riqi ul").fadeToggle();
+	       	}
+	    });
+		
+	});
+	function myFunction(){
+			var num = $("#addpunish #num").val();
+			$.ajax({
+				type : "POST",
+				dataType : "json",
+				url : "${pageContext.request.contextPath}/disciplinary/readEmp.do",
+				data : "num=" + num,
+				show : "slide",
+				success : function(data) {
+					if(data != null){
+						var $data =data.data;
+						$("#addpunish #ids").text($data.ids);
+						$("#addpunish #name").text($data.name);
+						$("#addpunish #aliasname").text($data.aliasname);
+						$("#addpunish #posName").text($data.posName);
+						$("#addpunish #depName").text($data.depName);
+						$("#addpunish #posId").text($data.posId);
+						$("#addpunish #depId").text($data.depId);
+					}else{
+						$.threesecond("数据不存在", 200, 100, 1000);
+					}
+				}
+			})
+		};
+			
+	function seanot(id){
+    			var id = id;
+    			var rejectMsg = {
+	                "id":id
+	            };
+                	$.ajax({
+	                    type: "POST",
+	                    url: "${pageContext.request.contextPath}/disciplinary/notPass.do",
+	                    data: JSON.stringify(rejectMsg),
+						contentType: "application/json; charset=utf-8",
+						cache: false
+	                  }).done(function (data) {
+	                	if(data.resultStatus == 200){
+                            $.basewindow("未通过原因", "#notpass", 400, 200);
+                             $("#notpass #rejectMsg").html(data.exData);
+	                	}else{
+	                	    $.threesecond("获取失败!", 200, 100, 1000);
+	                	    return false;
+	                	}
+	                })
+				return true;
+			};
+	function test(){
+				var disciplinary = $("#addtreatment #disciplinary").text();
+				var punishMoney = $("#addtreatment #punishMoney").val();
+				if(disciplinary == ''){
+					disciplinary = 0
+				}
+				if(punishMoney == ''){
+					punishMoney = 0
+				}
+				var num1=parseFloat(disciplinary);   
+                var num2=parseFloat(punishMoney); 
+                if(num1 - num2 == 0){
+                	$("#addtreatment #residualMoney").val(0);
+                }else{
+                	$("#addtreatment #residualMoney").val(num1 - num2);
+                }
+			}
+	function punish(){
+				var punishment = $("#addtreatment #punishment").val();
+	
+                if(punishment == "1"){
+                	$("#addtreatment #punishmentType").val("工资扣除");
+                }else{
+                	$("#addtreatment #punishmentType").val("现金");
+                }
+			}
+</script>
+</head>
+<body class="custom-scroll">
+	<div class="right-one fsize18 fweightbold clearFix">
+		<div class="fl">
+			<span class="refresh fl"></span>
+		</div>
+		<div class="fr">
+			<span class="rName fl"></span> <span class="username fl">${user.user.accounts}</span>
+			<span class="fl">, 欢迎来到<spring:message code="title" /></span> <a
+				href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+		</div>
+	</div>
+<div class="rightPadd">
+	<div class="right-twohalf">
+		<span>首页</span> <span>></span> <span>行政系统</span> <span>></span> 
+		<span class="color99">违纪处理</span>
+		<div class="fr">
+			<span id="upLoad">导出Excel</span>
+		</div>
+	</div>
+	
+	<div class="right-twoRight">
+			<div class="control2 fl" style="margin-left:253px">
+				<input class="tabBtn1 all" type="button" value="所有事项">
+				<input class="tabBtn1 chou" type="button" value="迟到/旷工">
+				<input class="tabBtn1 dai" type="button" value="抽烟/吃饭">
+				<input class="tabBtn1 cent" type="button" value="卫生">
+				<input class="tabBtn1 pass" type="button" value="未关设备">
+				<input class="tabBtn1 not" type="button" value="其他">
+			</div>
+		<div class="fr">
+			<span class="riqitext">查看历史记录：</span>
+			<div class="riqi"><span>${date}</span><ul></ul></div>
+			<div class="search">
+	    		<input id="fast" type="text" placeholder="缴纳状态/姓名/员工号">
+		    	<button type="button" id="seach" class="tableok">搜索</button>				
+			</div>
+		</div>
+	</div>
+		<div class="custom-scroll mains">
+			<div class="lefttree custom-scroll">
+				<table class="table" style="min-width: 20%;">
+					<tr><th align="center">部门导航</th></tr>
+					<tr><td id="tree" style="text-align:left;"></td></tr>
+				</table>
+			</div>
+			<div class="thistable custom-scroll" style="overflow:auto; background-color:#fff; ">
+				<table id="searchTable" class="table tablelist">
+					<tr class="firsttr" >
+						<th w_index="id" w_align="center" width="1%;" w_hidden="true" type="checkbox">id</th>
+						<th w_index="branchs" w_align="center" width="1%;" w_hidden="true">branchs</th>
+						<th w_index="process" w_align="center" width="1%;" w_hidden="true">process</th>
+						<th w_check="true" w_index="billed" width="1%;"></th>
+						<th w_num="line" w_align="center" width="1%;">序号</th>
+						<th w_index="name" w_align="center" width="1%;">处罚人姓名</th>
+						<th w_index="num" w_align="center" width="1%;">员工号</th>
+						<th w_index="depName" w_align="center" width="1%;">部门</th>
+						<th w_index="posName" w_align="center" width="1%;">职务</th>
+						<th w_index="punishmentItems" w_align="center" width="1%;">处罚事项</th>
+						<th w_index="disciplinary" w_align="center" width="1%;">处罚金额</th>
+						<th w_index="applyDT" w_align="center" width="1%;">处罚时间</th>
+						<th w_index="fname" w_align="center" width="1%;">制单人</th>
+						<th w_index="punishRemarks" w_align="center" width="1%;">罚单备注</th>
+						<th w_index="depPass" w_edit="depPass" w_align="center" width="1%;">部门确认</th>
+						<th w_index="punishment" w_edit="punishment" w_align="center" width="1%;">罚款交纳状态</th>
+						<th w_index="punishmentType" w_align="center" width="1%;">缴纳形式</th>
+						<th w_index="punishMoney" w_align="center" width="1%;">实际缴纳/扣除金额</th>
+						<th w_index="residualMoney" w_align="center" width="1%;">剩余金额</th>
+						<th w_index="completeDT" w_align="center" width="1%;">缴纳时间</th>
+						<th w_index="payPerson" w_align="center" width="1%;">缴纳人</th>
+						<th w_index="payee" w_align="center" width="1%;">收款人</th>
+						<th w_index="payRemarks" w_align="center">交款备注</th>
+					</tr>
+				</table>
+				<div class="control">
+					<jsp:include page="attsTabCommon.jsp"></jsp:include>
+				</div>
+			</div>
+		</div>
+		<!-- 新增  修改 -->
+		<div id="addpunish" style="margin-left: 20px; margin-right: 20px; display:none;">
+				<table class="table">
+					<tr>
+						<td style="text-align: center;">员工号：</td>
+						<td class="taL"><input type="text" name="num" id="num" onblur="myFunction()" style="width:200px;text-align: left"></td>
+						<td style="text-align: center;">处罚人姓名：</td>
+						<td id="name" class="taL" style="width:200px;"></td>
+					</tr>
+					<tr>
+						<td style="text-align: center;">艺名：</td>
+						<td id="aliasname" class="taL" style="width:200px;"></td>
+						<td style="text-align: center;">处罚时间：</td>
+						<td class="taL"><input class="easyui-datebox" editable="false"
+							type="text" name="applyDT" id="applyDT" style="width:200px;">
+							<span class="mustred">*</span></td>
+						
+					</tr>
+					<tr style="text-align: left;" align="center">
+						<td style="text-align: center;">职位：</td>
+						<td id="posName" class="taL" style="width:200px;"></td>
+						<td style="text-align: center;">部门：</td>
+						<td id="depName" class="taL" style="width:200px;"></td>
+					</tr>
+					<tr style="text-align: left;" align="center">
+						<td style="text-align: center;">处罚金额：</td>
+						<td class="taL"><input type="text" name="disciplinary" id="disciplinary" style="width:200px;text-align: left"></td>
+						<td style="text-align: center;">制单人：</td>
+						<td class="taL"><input type="text" name="fname" id="fname" style="width:200px;text-align: left"></td>
+					</tr>
+					<tr style="text-align: left;" align="center">
+						<td style="text-align: center;">处罚事项：</td>
+						<td class="taL"><select type="text" id="punishmentItems" name="punishmentItems" style="width:200px;">
+							<option value="1">所有事项</option>
+							<option value="2">迟到/旷工 </option>
+							<option value="3">抽烟/吃饭</option>
+							<option value="4">卫生</option>
+							<option value="5">未关设备</option>
+							<option value="6">其他</option>
+						</select></td>
+						<td style="text-align: center;">罚单备注：</td>
+						<td class="taL"><input type="text" name="punishRemarks" id="punishRemarks" style="width:200px;text-align: left"></td>
+					</tr>
+					<tr>
+						<td style="text-align: right; display:none; ">id</td>
+						<td id="id" class="id" style="display:none; "></td>
+						<td style="text-align: right; display:none; ">ids</td>
+						<td id="ids" class="ids" style="display:none; "></td>
+					</tr>
+					<tr>
+						<td style="text-align: right; display:none; ">id</td>
+						<td id="depId" class="depId" style="display:none; "></td>
+						<td style="text-align: right; display:none; ">id</td>
+						<td id="posId" class="posId" style="display:none; "></td>
+					</tr>
+					</table>
+				<p style="text-align:center;">
+					<input class="ok" id="ok" type="reset" value="提交">
+					<input class="cancel" type="reset" name="Input" value="取消">
+				</p>
+			</div>
+			
+			<div id="addtreatment" style="margin-left: 20px; margin-right: 20px; display:none;">
+				<table class="table">
+					<tr>
+						<td style="text-align: center;">罚款交纳状态：</td>
+						<td class="taL"><select type="text" id="punishment" name="punishment" onchange="punish()" style="width:200px;text-align: left">
+							<option value="1">未交</option>
+							<option value="2">已交 </option>
+						</select></td>
+						<td style="text-align: center;">交纳形式：</td>
+						<td class="taL"><input type="text" name="punishmentType" id="punishmentType" style="width:200px;text-align: left"></td> 
+					</tr>
+					<tr>
+						<td style="text-align: center;">实际交纳/扣除金额：</td>
+						<td class="taL"><input type="text" name="punishMoney" id="punishMoney" onkeyup="test()" onkeyup="this.value=(this.value.match(/\d+(\.\d{0,2})?/)||[''])[0]" style="width:200px;text-align: left"></td>
+						<td style="text-align: center;">交款时间：</td>
+						<td class="taL"><input class="easyui-datebox" editable="false"
+							type="text" name="completeDT" id="completeDT" style="width:200px;text-align: left"></td>
+					</tr>
+					<tr>
+						<td style="text-align: center;">剩余金额：</td>
+						<td class="taL"><input type="text" name="residualMoney" id="residualMoney" style="width:200px;text-align: left"></td> 
+						<td style="text-align: center;">收款人：</td>
+						<td id="payee" style="width:200px;"></td>
+					</tr>
+					<tr style="text-align: left;" align="center">
+						<td style="text-align: center;">交纳人：</td>
+						<td class="taL"><input type="text" name="payPerson" id="payPerson" style="width:200px;text-align: left"></td> 
+						<td style="text-align: center;">交款备注 ：</td>
+						<td class="taL"><input type="text" name="payRemarks" id="payRemarks" style="width:200px;text-align: left"></td>
+					</tr>
+					<tr>
+						<td style="text-align: right; display:none; ">disciplinary</td>
+						<td id="disciplinary" class="disciplinary" style="display:none; "></td>
+						<td style="text-align: right; display:none; ">id</td>
+						<td id="id" class="id" style="display:none; "></td>
+					</tr>
+				</table>
+				<p style="text-align:center;">
+					<input class="ok" id="ok" type="reset" value="提交">
+					<input class="cancel" type="reset" name="Input" value="取消">
+				</p>
+			</div> 
+			
+		<div  id="notpass" style="display:none;margin-left:20px;margin-right:20px;">
+			<table class="table2">
+				<tr>
+					<td style="text-align: right;" class="hei">未通过原因：</td>
+					<td><span id="rejectMsg" class="w200"></span></td>
+				</tr>
+			</table>
+			<p class="bCenter">
+				<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</div>
+		
+		<form id="deptpass" style="display:none;margin-left:20px;margin-right:20px;">
+			<p>
+				<input class="ok" id="ok" type="reset" value="确定">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="jujue" class="okok">拒绝</span>
+			</p>
+		</form>
+		
+		<form  id="rejectE" style="display:none;margin-left:20px;margin-right:20px;">
+			<p>拒绝申请原因</p>
+			<input type="hidden" name="id" id="id">
+			<p><textarea name="rejectMsg" id="rejectMsg" type="text" placeholder="20字以内"  style="width:250px; height:100px;"></textarea></p>
+			<p class="bCenter">
+				<input class="ok" id="okok" type="button" value="确定拒绝">&nbsp;&nbsp;&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+		
+	</body>
+</html>

@@ -1,0 +1,30 @@
+package com.baofeng.oa.service;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.EquipmentCollarBean;
+import com.baofeng.oa.entity.EquipmentCollar;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+
+public interface IUseAuditService {
+
+	NPageResult<?> readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer type, String fastArg, Integer id,
+			SearchFilter searchFilter);
+
+	boolean updatedeptPass(List<String> list, RoleUsers users,HttpServletRequest request);
+
+	boolean updateequiPass(List<String> list, RoleUsers users,HttpServletRequest request);
+
+	boolean updateEnd(List<String> list, RoleUsers users,HttpServletRequest request);
+
+	boolean updateReject(EquipmentCollarBean bean, RoleUsers users,HttpServletRequest request);
+
+	EquipmentCollar checkReason(Integer id);
+
+
+}

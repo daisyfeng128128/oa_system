@@ -1,0 +1,770 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>公司管理</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<jsp:include page="common.jsp"></jsp:include>
+	<jsp:include page="bootstarp.jsp"></jsp:include>
+<style type="text/css">
+	.salarylook{width:100%;height:80%}
+	.mustred{ color:#ff0000}
+	body {
+		height: 100%;
+		min-width: 200px;
+		overflow-x: hidden;overflow-y:scroller;
+		position: relative;
+	}
+	.yirentable tr {
+		height: 30px;
+		line-height: 30px;
+	}
+	
+	.yirentable tr:hover {
+		background-color: #ddd;
+	}
+	
+	.yirentable .firsttr:hover {
+		background-color: #fff;
+	}
+	
+	.yirentable .selected {
+		background-color: #ddd;
+	}
+	
+	.basewindow .okok {
+		border: 1px solid #ddd;
+		text-align: center;
+		height: 32px;
+		line-height: 32px;
+		display: inline-block;
+		color: #fff;
+		background-color: #e35d00;
+		box-shadow:inset 0 0 6px #e8a16f; 
+		width: 82px;
+		border-radius: 2px;
+		margin-right: 20px;
+		cursor: pointer;
+		margin-top: 20px;
+	}
+	.ksss{
+		cursor: pointer;
+		border: 1px solid #ddd;
+		height: 30px;
+		line-height: 30px;
+		display: inline-block;
+		color: #fff;
+		background-color: #599eeb;
+		width: auto;
+		padding: 0px 20px;
+		border-radius: 5px;
+		margin-right: 10px;
+		cursor: pointer;
+	}
+	.thistable{
+		overflow:auto;
+		background-color:#fff;
+	}
+	.table td{
+	}
+	.bg83{
+		margin-bottom:14px;
+		height:44px;
+		line-height:44px; 
+	}
+	.table input{height:26px; }
+	.basewindow{
+		height:790px; 
+	}
+	.basewindow .table>tbody>tr>td{
+		text-align:left; 
+		padding:2px 8px; 
+	}
+	.tit{
+		margin-top:16px;
+		margin-bottom:0; 
+		color:#e35d00; 
+		text-align:center; 
+	}
+	.tableok{
+		position:static; 
+	}
+	#okok{
+		background-color:#e35d00;
+		height:32px;
+		width:82px;
+	}
+	.control{
+		margin-left:-234px; 
+	}
+</style>
+	<script type="text/javascript">
+	$(function () {
+        var grid = $.fn.bsgrid.init("searchTable", {
+            url: "${pageContext.request.contextPath}/branchOff/readPages.do",
+            pageSizeSelect: true,
+            pageSize:pageSize,
+            pagingToolbarAlign: "left",
+            displayBlankRows: false,
+            displayPagingToolbarOnlyMultiPages: true,
+            extend: {
+                settings: {
+                    supportGridEdit:true,
+                    supportGridEditTriggerEvent: "",
+                    gridEditConfigs: {
+                        costArtists:{
+	    	                build: function (edit, value) {
+    	                       return value;
+	    	                }
+	    	            }
+                    } 
+                }
+            }
+        });
+        $(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+        //新增
+		$(".control .add").click(function() {
+			var $chuangkou = $("#addBranch");
+			$.basewindow("新增子公司", $chuangkou, 390, 370);
+		})
+		
+		//修改
+		$(".mid").click(function(){
+			var $chuangkou = $("#addBranch");
+			if (grid.getSelectedRow().length > 0) {
+				var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				var editurl = "${pageContext.request.contextPath}/branchOff/edit.do";
+				$.ajax({
+					type : "get",
+					dataType : "json",
+					url : editurl,
+					data : "id=" + id,
+					show : "slide",
+					success : function(data) {
+					    var $data =data.data;
+					    $("#numberHead").val($data.numberHead);
+					    $("#id").val($data.id);
+					    $("#name").val($data.name);
+					    if($data.islogin == "0"){
+					        $("#islogin").val("0").selected;
+					    }else if($data.islogin == "1"){
+					        $("#islogin").val("1").selected;
+					    }
+					    $("#ipgp").val($data.ipgp);
+					    $("#telPhone").numberbox("setValue",$data.telPhone);
+					    $("#email").val($data.email);
+					    $("#address").val($data.address);
+					},
+					error : function(data) {
+					    
+					}
+				});
+				$.basewindow("修改子公司",$chuangkou, 430, 380);
+				$chuangkou.css({ "display" : "block" });
+			} else {
+				$.threesecond("请先选择", 200, 100, 1000);
+			}
+		})
+
+		//提交
+		$(".okok").click(function(){
+		    var sname = $("#name").val();
+		    var snumberHead= $("#numberHead").val();
+		    var sid = $("#id").val();
+		    var sislogin = $("#islogin").val();
+		    var sipgp= $("#ipgp").val();
+		    var stelPhone = $("#telPhone").numberbox("getValue");
+		    var semail = $("#email").val();
+		    var saddress = $("#address").val();
+		    if(!sname){
+		        $.threetop("公司名称不能为空!");
+		        return false;
+		    }
+		    if(!sipgp){
+		        $.threetop("公司简称不能为空!");
+		        return false;
+		    }
+		    if(!snumberHead){
+		        $.threetop("员工号前缀不能为空!");
+		        return false;
+		    }
+		    var json = {
+		            id : sid,
+		            name:sname,
+		            ipgp : sipgp,
+		            numberHead:snumberHead,
+		            islogin : sislogin,
+		            telPhone :stelPhone,
+		            email : semail,
+		            address : saddress
+		    }
+		    var editurl = "${pageContext.request.contextPath}/branchOff/save.do";
+		    $.ajax({
+		        type : "post",
+				url : editurl,
+				cache: false,
+		        data: JSON.stringify(json),
+		        contentType: 'application/json; charset=utf-8',
+		        success:function(data){
+		            if (data.resultStatus == 200) {
+						$(".zhezhao-basewindow").hide();
+						$(".basewindow").hide();
+						$("#addBranch").hide();
+						$('body').append($("#addBranch"));
+						grid.refreshPage();
+					}
+		        }
+		    })
+		})
+		
+		//删除
+		$(".del").click(function(){
+		    if (grid.getSelectedRow().length > 0) {
+		        $.yesorno("是否删除？",300,160,function() {
+				var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				var editurl = "${pageContext.request.contextPath}/branchOff/delete.do";
+				$.ajax({
+					type : "get",
+					dataType : "json",
+					url : editurl,
+					data : "id=" + id,
+					show : "slide",
+					success : function(data) {
+					    if (data.resultStatus == 200) {
+					        $.threesecond("删除成功", 200, 100, 1000);
+							grid.refreshPage();
+						} 
+					   
+					},
+					error : function(data) {
+					}
+				});
+			});} else {
+				$.threesecond("请先选择", 200, 100, 1000);
+			}
+		})
+		
+			$(".soc").click(function(){
+			    var $chuangkou = $("#soclook");
+			    if (grid.getSelectedRow().length > 0) {
+					var id = grid.getRowRecord(grid.getSelectedRow()).id;
+			   		var editurl = "${pageContext.request.contextPath}/branchOff/editSoc.do?t="+ new Date().toTimeString();
+					$.ajax({
+						type : "get",
+						dataType : "json",
+						url : editurl,
+						data : "id=" + id,
+						show : "slide",
+						success : function(data) {
+						    $.basewindow("修改社保基数", $chuangkou, 594, 794);
+						    $(".basewindow").addClass("custom-scroll");
+							 $chuangkou.css({ "display" : "block" });
+						    $("#soclook #id").val(id);
+							 if(data != null && data.data != null){
+							     var $data = data.data;
+							     $("#soclook #MinPFcardinalNumber").val($data.MinPFcardinalNumber);
+							     $("#soclook #MaxPFcardinalNumber").val($data.MaxPFcardinalNumber);
+							     $("#soclook #MinSScardinalNumber").val($data.MinSScardinalNumber);
+							     $("#soclook #MaxSScardinalNumber").val($data.MaxSScardinalNumber);
+							     //城镇户口.split('_')[0];
+							     var s0;
+							     var s1;
+							     s0 = $data.towns.pn_pension.split('%+')[0];
+							     s1 = $data.towns.pn_pension.split('%+')[1];
+							     $("#soclook #pn_pension0").val(s0);
+							     $("#soclook #pn_pension1").val(s1);
+							     s0 = $data.towns.pn_medicare.split('%+')[0];
+							     s1 = $data.towns.pn_medicare.split('%+')[1];
+							     $("#soclook #pn_medicare0").val(s0);
+							     $("#soclook #pn_medicare1").val(s1);
+							     s0 = $data.towns.pn_unemployment.split('%+')[0];
+							     s1 = $data.towns.pn_unemployment.split('%+')[1];
+							     $("#soclook #pn_unemployment0").val(s0);
+							     $("#soclook #pn_unemployment1").val(s1);
+							     s0 = $data.towns.cp_pension.split('%+')[0];
+							     s1 = $data.towns.cp_pension.split('%+')[1];
+							     $("#soclook #cp_pension0").val(s0);
+							     $("#soclook #cp_pension1").val(s1);
+							     s0 = $data.towns.cp_medicare.split('%+')[0];
+							     s1 = $data.towns.cp_medicare.split('%+')[1];
+							     $("#soclook #cp_medicare0").val(s0);
+							     $("#soclook #cp_medicare1").val(s1);
+							     s0 = $data.towns.cp_unemployment.split('%+')[0];
+							     s1 = $data.towns.cp_unemployment.split('%+')[1];
+							     $("#soclook #cp_unemployment0").val(s0);
+							     $("#soclook #cp_unemployment1").val(s1);
+							     s0 = $data.towns.cp_occupationalInjury.split('%+')[0];
+							     s1 =$data.towns.cp_occupationalInjury.split('%+')[1];
+							     $("#soclook #cp_occupationalInjury0").val(s0);
+							     $("#soclook #cp_occupationalInjury1").val(s1);
+							     s0 =$data.towns.cp_fertility.split('%+')[0];
+							     s1 = $data.towns.cp_fertility.split('%+')[1];
+							     $("#soclook #cp_fertility0").val(s0);
+							     $("#soclook #cp_fertility1").val(s1);
+							     s0 =$data.towns.pn_occupationalInjury.split('%+')[0];
+							     s1 =$data.towns.pn_occupationalInjury.split('%+')[1];
+							     $("#soclook #pn_occupationalInjury0").val(s0);
+							     $("#soclook #pn_occupationalInjury1").val(s1);
+							     s0 =$data.towns.pn_fertility.split('%+')[0];
+							     s1 =$data.towns.pn_fertility.split('%+')[1];
+							     $("#soclook #pn_fertility0").val(s0);
+							     $("#soclook #pn_fertility1").val(s1);
+							     s0 =$data.towns.pn_provident.split('%+')[0];
+							     s1 =$data.towns.pn_provident.split('%+')[1];
+							     $("#soclook #pn_provident0").val(s0);
+							     $("#soclook #pn_provident1").val(s1);
+							     s0 =$data.towns.cp_provident.split('%+')[0];
+							     s1 =$data.towns.cp_provident.split('%+')[1];
+							     $("#soclook #cp_provident0").val(s0);
+							     $("#soclook #cp_provident1").val(s1);
+							     //农村户口
+							     s0 = $data.country.pn_pension.split('%+')[0];
+							     s1 = $data.country.pn_pension.split('%+')[1];
+							     $("#soclook #n_pn_pension0").val(s0);
+							     $("#soclook #n_pn_pension1").val(s1);
+							     s0 = $data.country.pn_medicare.split('%+')[0];
+							     s1 = $data.country.pn_medicare.split('%+')[1];
+							     $("#soclook #n_pn_medicare0").val(s0);
+							     $("#soclook #n_pn_medicare1").val(s1);
+							     s0 = $data.country.pn_unemployment.split('%+')[0];
+							     s1 = $data.country.pn_unemployment.split('%+')[1];
+							     $("#soclook #n_pn_unemployment0").val(s0);
+							     $("#soclook #n_pn_unemployment1").val(s1);
+							     s0 = $data.country.cp_pension.split('%+')[0];
+							     s1 = $data.country.cp_pension.split('%+')[1];
+							     $("#soclook #n_cp_pension0").val(s0);
+							     $("#soclook #n_cp_pension1").val(s1);
+							     s0 = $data.country.cp_medicare.split('%+')[0];
+							     s1 = $data.country.cp_medicare.split('%+')[1];
+							     $("#soclook #n_cp_medicare0").val(s0);
+							     $("#soclook #n_cp_medicare1").val(s1);
+							     s0 = $data.country.cp_unemployment.split('%+')[0];
+							     s1 = $data.country.cp_unemployment.split('%+')[1];
+							     $("#soclook #n_cp_unemployment0").val(s0);
+							     $("#soclook #n_cp_unemployment1").val(s1);
+							     s0 = $data.country.cp_occupationalInjury.split('%+')[0];
+							     s1 = $data.country.cp_occupationalInjury.split('%+')[1];
+							     $("#soclook #n_cp_occupationalInjury0").val(s0);
+							     $("#soclook #n_cp_occupationalInjury1").val(s1);
+							     s0 = $data.country.cp_fertility.split('%+')[0];
+							     s1 = $data.country.cp_fertility.split('%+')[1];
+							     $("#soclook #n_cp_fertility0").val(s0);
+							     $("#soclook #n_cp_fertility1").val(s1);
+							     s0 = $data.country.pn_occupationalInjury.split('%+')[0];
+							     s1 = $data.country.pn_occupationalInjury.split('%+')[1];
+							     $("#soclook #n_pn_occupationalInjury0").val(s0);
+							     $("#soclook #n_pn_occupationalInjury1").val(s1);
+							     s0 = $data.country.pn_fertility.split('%+')[0];
+							     s1 = $data.country.pn_fertility.split('%+')[1];
+							     $("#soclook #n_pn_fertility0").val(s0);
+							     $("#soclook #n_pn_fertility1").val(s1);
+							     s0 =$data.country.pn_provident.split('%+')[0];
+							     s1 =$data.country.pn_provident.split('%+')[1];
+							     $("#soclook #n_pn_provident0").val(s0);
+							     $("#soclook #n_pn_provident1").val(s1);
+							     s0 =$data.country.cp_provident.split('%+')[0];
+							     s1 =$data.country.cp_provident.split('%+')[1];
+							     $("#soclook #n_cp_provident0").val(s0);
+							     $("#soclook #n_cp_provident1").val(s1);
+							 }else{
+							     $(".socSec").val(0);
+							 }
+						},
+						error : function(data) {
+						    $("#soclook #id").val(id);
+						    $.basewindow("修改社保基数", $chuangkou, 594, 794);
+							$chuangkou.css({ "display" : "block" });
+						}
+						});
+						
+			    	}else{
+			    	    $.threesecond("请先选择", 200, 100, 1000);
+			    	}
+				
+		})
+		$("#soclook .tableok").click(function(){
+		     var MinPFcardinalNumber = $("#soclook #MinPFcardinalNumber").val();
+		     var MaxPFcardinalNumber = $("#soclook #MaxPFcardinalNumber").val();
+		     var MinSScardinalNumber = $("#soclook #MinSScardinalNumber").val();
+		     var MaxSScardinalNumber = $("#soclook #MaxSScardinalNumber").val();
+		     var pn_pension = $("#soclook #pn_pension0").val() + "%+"+ $("#soclook #pn_pension1").val();
+		     var pn_medicare = $("#soclook #pn_medicare0").val()+"%+"+$("#soclook #pn_medicare1").val();
+		     var pn_occupationalInjury = $("#soclook #pn_occupationalInjury0").val() +"%+"+ $("#soclook #pn_occupationalInjury1").val();
+		     var pn_fertility = $("#soclook #pn_fertility0").val()+"%+"+$("#soclook #pn_fertility1").val();
+		     var pn_unemployment = $("#soclook #pn_unemployment0").val()+"%+"+$("#soclook #pn_unemployment1").val();
+		     var pn_provident = $("#soclook #pn_provident0").val()+"%+"+$("#soclook #pn_provident1").val();
+		     var cp_pension = $("#soclook #cp_pension0").val()+"%+"+$("#soclook #cp_pension1").val();
+		     var cp_medicare = $("#soclook #cp_medicare0").val()+"%+"+$("#soclook #cp_medicare1").val();
+		     var cp_unemployment = $("#soclook #cp_unemployment0").val() +"%+"+ $("#soclook #cp_unemployment1").val();
+		     var cp_occupationalInjury = $("#soclook #cp_occupationalInjury0").val() +"%+"+ $("#soclook #cp_occupationalInjury1").val();
+		     var cp_fertility = $("#soclook #cp_fertility0").val()+"%+"+$("#soclook #cp_fertility1").val();
+		     var cp_provident =$("#soclook #cp_provident0").val()+"%+"+$("#soclook #cp_provident1").val();
+		     //农村户口
+		     var n_pn_pension = $("#soclook #n_pn_pension0").val()+"%+"+$("#soclook #n_pn_pension1").val();
+		     var n_pn_medicare = $("#soclook #n_pn_medicare0").val()+"%+"+$("#soclook #n_pn_medicare1").val();
+		     var n_pn_occupationalInjury = $("#soclook #n_pn_occupationalInjury0").val()+"%+"+$("#soclook #n_pn_occupationalInjury1").val();
+		     var n_pn_fertility = $("#soclook #n_pn_fertility0").val()+"%+"+$("#soclook #n_pn_fertility1").val();
+		     var n_pn_unemployment = $("#soclook #n_pn_unemployment0").val()+"%+"+$("#soclook #n_pn_unemployment1").val();
+		     var n_pn_provident = $("#soclook #n_pn_provident0").val()+"%+"+$("#soclook #n_pn_provident1").val();
+		     var n_cp_pension = $("#soclook #n_cp_pension0").val()+"%+"+$("#soclook #n_cp_pension1").val();
+		     var n_cp_medicare = $("#soclook #n_cp_medicare0").val()+"%+"+$("#soclook #n_cp_medicare1").val();
+		     var n_cp_unemployment = $("#soclook #n_cp_unemployment0").val()+"%+"+$("#soclook #n_cp_unemployment1").val();
+		     var n_cp_occupationalInjury = $("#soclook #n_cp_occupationalInjury0").val()+"%+"+$("#soclook #n_cp_occupationalInjury1").val();
+		     var n_cp_fertility = $("#soclook #n_cp_fertility0").val()+"%+"+$("#soclook #n_cp_fertility1").val();
+		     var n_cp_provident =$("#soclook #n_cp_provident0").val()+"%+"+$("#soclook #n_cp_provident1").val();
+		     var socialsecurity ={
+		             id :$("#soclook #id").val(),
+			         socialsecurity :JSON.stringify({
+			           MinPFcardinalNumber : MinPFcardinalNumber,
+			           MaxPFcardinalNumber : MaxPFcardinalNumber,
+			           MinSScardinalNumber : MinSScardinalNumber,
+			           MaxSScardinalNumber : MaxSScardinalNumber,
+			     	  towns : {
+			     	   pn_pension : pn_pension,
+			     	   pn_medicare : pn_medicare,
+			     	   pn_occupationalInjury : pn_occupationalInjury,
+			     	   pn_fertility : pn_fertility,
+			     	   pn_unemployment : pn_unemployment,
+			     	   pn_provident : pn_provident,
+			     	   cp_pension : cp_pension,
+			     	   cp_medicare : cp_medicare,
+			     	   cp_unemployment : cp_unemployment,
+			     	   cp_occupationalInjury : cp_occupationalInjury,
+			     	   cp_fertility : cp_fertility,
+			     	   cp_provident : cp_provident
+			     	   },
+			     	  country : {
+				     	   pn_pension : n_pn_pension,
+				     	   pn_medicare : n_pn_medicare,
+				     	   pn_occupationalInjury : n_pn_occupationalInjury,
+				     	   pn_fertility : n_pn_fertility,
+				     	   pn_unemployment : n_pn_unemployment,
+				     	   pn_provident : n_pn_provident,
+				     	   cp_pension : n_cp_pension,
+				     	   cp_medicare : n_cp_medicare,
+				     	   cp_unemployment : n_cp_unemployment,
+				     	   cp_occupationalInjury : n_cp_occupationalInjury,
+				     	   cp_fertility : n_cp_fertility,
+				     	   cp_provident : n_cp_provident
+				     	   }
+			 	})};
+			 $.ajax({
+	                type: "POST",
+	                url: "${pageContext.request.contextPath}/branchOff/saveSoc.do",
+	                data:JSON.stringify(socialsecurity),
+	                cache: false,
+	                contentType: 'application/json; charset=utf-8',
+	                success:function(data){
+	                    if(data.resultStatus==200){
+	                        $(".zhezhao-basewindow").hide();
+	    					$(".basewindow").hide();
+	    					$('body').append($("#soclook"));
+	    					$("#soclook").hide();
+	    					grid.refreshPage();
+	                        $.threesecond("保存成功", 200, 100, 1000);
+	                    }
+	                }
+	            });	
+		})
+      });
+	/** 验证纯数字 */
+	function checkNum(data){
+	    var reg = /^\d+(\.\d+)?$/; 	 
+	    if(reg.test(data.value)==true){
+	        $("#"+data.id).val( data.value);
+	    }else{
+	        $("#"+data.id).val(0);
+	    }
+	}
+	</script>
+  </head>
+  <body class="custom-scroll">
+    <div class="right-one fsize18 fweightbold clearFix">
+	   		<div class="fl">
+	   			<span class="refresh fl"></span>
+        		<span class="num fl">2</span>
+	   		</div>
+	   		<div class="fr">
+	   			<span class="rName fl"></span>
+	   			<span class="username fl">${user.user.accounts}</span>
+	   			<span class="fl">, 欢迎来到<spring:message code="title"/></span>
+	   			<a href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+	   		</div>
+	   </div>
+	<div class="rightPadd">
+		<div class="right-twohalf">
+			<span>首页</span> 
+			<span>></span>
+			<span>系统设置</span> 
+			<span>></span>
+			<span class="color99">公司管理</span>
+    	</div>
+		<div class="control">
+			<p>
+				<jsp:include page="attsCommon.jsp"></jsp:include>
+				<input class="tabBtn soc" type="button" value="社保基数">
+			</p>
+		</div>
+		<div class="thistable custom-scroll">
+			<table id="searchTable" class="table tablelist">
+				<tr class="firsttr">
+					<th w_index="id" w_align="center" width="1%;" w_hidden="true">id</th>
+					<th w_num="line" w_align="center" width="1%;">序号</th>
+					<th w_index="name" w_align="center" width="1%;">公司名称</th>
+					<th w_index="ipgp" w_align="center" width="1%;">公司简称</th>
+					<th w_index="numberHead" w_align="center" width="1%;">员工前缀</th>
+					<th w_index="telPhone" w_align="center" width="1%;">联系电话</th>
+					<th w_index="email" w_align="center" width="1%;">电子邮箱</th>
+					<th w_index="address" w_align="center" width="1%;">公司地址</th>
+					<th w_index="islogin" w_align="center" width="1%;">是否登录</th>
+					<th w_index="remark" w_align="center">备注</th>
+				</tr>
+			</table>
+		</div>
+		
+		<div id="addBranch" style="margin-left: 20px; margin-right: 20px; display:none;">
+			<table class="table">
+				<tr>
+					<td style="text-align: right;">公司名称：</td>
+					<td><input type="text" name="name" id="name" style="width:200px;"> <span class="mustred">*</span></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">公司简称：</td>
+					<td><input type="text" name="ipgp" id="ipgp" style="width:200px;"><span class="mustred">*</span> </td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">员工号前缀：</td>
+					<td><input type="text" name="numberHead" id="numberHead" style="width:200px;"><span class="mustred">*</span> </td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">联系电话：</td>
+					<td><input type="text" name="telPhone" id="telPhone" style="width:200px;"  class="easyui-numberbox input"> </td>
+				</tr>	
+				<tr>	
+					<td style="text-align: right;">电子邮箱：</td>
+					<td><input type="text" name="email" id="email" style="width:200px;"> </td>
+				</tr>
+				<tr>
+					<td style="text-align: right;">公司地址：</td>
+					<td><input type="text" name="address" id="address" style="width:200px;"> </td>
+				</tr>
+				<tr>	
+					<td style="text-align: right;">是否登录：</td>
+					<td>
+						<select  id="islogin" name="islogin" style="width:200px;">
+							<option value="0">否</option>
+							<option value="1">是</option>
+						</select>
+					</td>
+				</tr>
+			</table>
+			<p style="text-align:center">
+				<input type="hidden" name="id" id="id">
+				<span class="okok">提交</span>&nbsp;&nbsp;
+				<input class="cancel" type="reset" name="Input" value="关闭">
+			</p>
+		</div>
+		
+		<!-- 修改社保基数 -->
+	
+		<div id="soclook" style="margin-left: 20px; margin-right: 20px; display:none;">
+			<table class="table">
+				<tr>
+					<td></td>
+					<td class="taL">最低基数</td>
+					<td class="taL">最高基数</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">	社保基数：</td>
+					<td  class="taL">
+						<input type="text" class="socSec" id="MinSScardinalNumber" onblur="checkNum(this)" name="MinSScardinalNumber" style="width:140px"/>
+					</td>
+					<td  class="taL">
+						<input type="text" class="socSec" id="MaxSScardinalNumber" onblur="checkNum(this)" name="MaxSScardinalNumber" style="width:140px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">公积金基数：</td>
+					<td class="taL">
+						<input type="text" class="socSec" id="MinPFcardinalNumber" onblur="checkNum(this)"  name="MinPFcardinalNumber" style="width:140px"/>
+					</td>
+					<td class="taL">
+						<input type="text" class="socSec" id="MaxPFcardinalNumber" onblur="checkNum(this)"  name="MaxPFcardinalNumber" style="width:140px"/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="3" class="yellowline"><p class="tit">城镇户口</p></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td class="taL">个人部分</td>
+					<td class="taL">公司部分</td>
+				</tr>
+			 	<tr>
+					<td style="text-align: right;" class="hei">养老金：</td>
+					<td>
+						<input type="text" class="socSec" id="pn_pension0" onblur="checkNum(this)" name="pn_pension0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="pn_pension1" onblur="checkNum(this)" name="pn_pension1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="cp_pension0" onblur="checkNum(this)" name="cp_pension0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="cp_pension1" onblur="checkNum(this)" name="cp_pension1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">医疗保险：</td>
+					<td>
+						<input type="text" class="socSec" id="pn_medicare0" onblur="checkNum(this)" name="pn_medicare0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="pn_medicare1" onblur="checkNum(this)" name="pn_medicare1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="cp_medicare0" onblur="checkNum(this)" name="cp_medicare0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="cp_medicare1" onblur="checkNum(this)" name="cp_medicare1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">工伤保险：</td>
+					<td>
+						<input type="text" class="socSec" id="pn_occupationalInjury0" onblur="checkNum(this)" name="pn_occupationalInjury0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="pn_occupationalInjury1" onblur="checkNum(this)" name="pn_occupationalInjury1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="cp_occupationalInjury0" onblur="checkNum(this)" name="cp_occupationalInjury0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="cp_occupationalInjury1" onblur="checkNum(this)" name="cp_occupationalInjury1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">生育保险：</td>
+					<td>
+						<input type="text" class="socSec" id="pn_fertility0" onblur="checkNum(this)" name="pn_fertility0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="pn_fertility1" onblur="checkNum(this)" name="pn_fertility1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="cp_fertility0" onblur="checkNum(this)" name="cp_fertility0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="cp_fertility1" onblur="checkNum(this)" name="cp_fertility1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">失业保险：</td>
+					<td>
+						<input type="text" class="socSec" id="pn_unemployment0" onblur="checkNum(this)" name="pn_unemployment0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="pn_unemployment1" onblur="checkNum(this)" name="pn_unemployment1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="cp_unemployment0" onblur="checkNum(this)" name="cp_unemployment0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="cp_unemployment1" onblur="checkNum(this)" name="cp_unemployment1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">公积金：</td>
+					<td>
+						<input type="text" class="socSec" id="pn_provident0" onblur="checkNum(this)" name="pn_provident0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="pn_provident1" onblur="checkNum(this)" name="pn_provident1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="cp_provident0" onblur="checkNum(this)" name="cp_provident0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="cp_provident1" onblur="checkNum(this)" name="cp_provident1" style="width:64px"/>
+					</td>
+				</tr>
+				
+				<tr>
+					<td colspan="3" class="yellowline"><p class="tit">农村户口</p>
+					</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td class="taL">个人部分</td>
+					<td class="taL">公司部分</td>
+				</tr>
+			 	<tr>
+					<td style="text-align: right;" class="hei">养老金：</td>
+					<td>
+						<input type="text" class="socSec" id="n_pn_pension0" onblur="checkNum(this)" name="n_pn_pension0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_pn_pension1" onblur="checkNum(this)" name="n_pn_pension1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="n_cp_pension0" onblur="checkNum(this)" name="n_cp_pension0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_cp_pension1" onblur="checkNum(this)" name="n_cp_pension1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">医疗保险：</td>
+					<td>
+						<input type="text" class="socSec" id="n_pn_medicare0" onblur="checkNum(this)" name="n_pn_medicare0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_pn_medicare1" onblur="checkNum(this)" name="n_pn_medicare1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="n_cp_medicare0" onblur="checkNum(this)" name="n_cp_medicare0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_cp_medicare1" onblur="checkNum(this)" name="n_cp_medicare1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">工伤保险：</td>
+					<td>
+						<input type="text" class="socSec" id="n_pn_occupationalInjury0" onblur="checkNum(this)" name="n_pn_occupationalInjury0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_pn_occupationalInjury1" onblur="checkNum(this)" name="n_pn_occupationalInjury1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="n_cp_occupationalInjury0" onblur="checkNum(this)" name="n_cp_occupationalInjury0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_cp_occupationalInjury1" onblur="checkNum(this)" name="n_cp_occupationalInjury1" style="width:64px"/>
+					</td>
+					
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">生育保险：</td>
+					<td>
+						<input type="text" class="socSec" id="n_pn_fertility0" onblur="checkNum(this)" name="n_pn_fertility0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_pn_fertility1" onblur="checkNum(this)" name="n_pn_fertility1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="n_cp_fertility0" onblur="checkNum(this)" name="n_cp_fertility0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_cp_fertility1" onblur="checkNum(this)" name="n_cp_fertility1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">失业保险：</td>
+					<td>
+						<input type="text" class="socSec" id="n_pn_unemployment0" onblur="checkNum(this)" name="n_pn_unemployment0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_pn_unemployment1" onblur="checkNum(this)" name="n_pn_unemployment1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="n_cp_unemployment0" onblur="checkNum(this)" name="n_cp_unemployment0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_cp_unemployment1" onblur="checkNum(this)" name="n_cp_unemployment1" style="width:64px"/>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">公积金：</td>
+					<td>
+						<input type="text" class="socSec" id="n_pn_provident0" onblur="checkNum(this)" name="n_pn_provident0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_pn_provident1" onblur="checkNum(this)" name="n_pn_provident1" style="width:64px"/>
+					</td>
+					<td>
+						<input type="text" class="socSec" id="n_cp_provident0" onblur="checkNum(this)" name="n_cp_provident0" style="width:64px"/>% +
+						<input type="text" class="socSec" id="n_cp_provident1" onblur="checkNum(this)" name="n_cp_provident1" style="width:64px"/>
+					</td>
+				</tr>
+			</table>
+	
+			<p style="text-align:center;">
+				<input type="hidden" id="id" name="id">
+				<button type="button" id="okok" class="tableok">保存</button>&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="关闭">
+			</p>
+		</div>
+	</div>
+  </body>
+</html>

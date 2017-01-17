@@ -1,0 +1,411 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>登陆账号</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<jsp:include page="common.jsp"></jsp:include>
+<jsp:include page="bootstarp.jsp"></jsp:include>
+<style>
+body {height: 100%;min-width: 200px;overflow-x: hidden;position: relative;}
+.yirentable tr{height:30px;line-height:30px;}
+.yirentable tr:hover{background-color:#ddd;}
+.yirentable .firsttr:hover{background-color:#fff;}
+.yirentable .selected{background-color:#ddd;}
+.control{position: fixed; left: 50%; bottom: 1%; margin-left:-232px; } 
+.searC{position:relative; width:204px; }
+.searC .next{
+	position:absolute; 
+	right:0; top:-1px; 
+	border: 1px solid #ddd;
+	text-align: center;
+	height: 30px;
+	line-height: 30px;
+	color: #fff;
+	background-color:#0074ac;
+	width: auto;
+	padding: 0px 14px;
+	border-radius: 2px;
+	cursor: pointer;}
+#name{height:28px; text-indent:1em; border-radius:2px; 
+	border:1px solid #ddd; 
+	-moz-border-radius:2px;
+	-o-border-radius:2px;
+}
+.choose{margin-right:10px; }
+.firsttr{border-bottom:1px solid #ddd; }
+.bottom{text-align:center; margin-top:-10px;}
+.next2{margin-right:20px;border: 1px solid #ddd;text-align: center;height: 32px;line-height: 32px;
+		display: inline-block;
+		color: #fff;
+		background-color: #e35d00;
+		width: 82px;
+		padding: 0px 20px;
+		border-radius: 2px;
+		margin-right: 10px;
+		cursor: pointer;
+}
+.bottom2{text-align:center; }
+.midbut{background-color:#e35d00; margin-right:20px;
+border: 1px solid #ddd;text-align: center;
+height: 32px;
+line-height: 32px;
+display: inline-block;color: #fff; width: 82px;
+padding: 0px 20px;border-radius: 5px;margin-right: 10px;
+cursor: pointer;"}
+</style>
+<script>
+$(function () {
+    var grid = $.fn.bsgrid.init("searchTable", {
+        url: "${pageContext.request.contextPath}/users/readPages.do",
+        pageSizeSelect: true,
+        pageSize: pageSize,
+        pagingToolbarAlign: "left",
+        displayBlankRows: false,
+        displayPagingToolbarOnlyMultiPages: true
+    });
+    
+     $(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+	
+    //新增
+    $(".control .add").click(function(){
+    	var $chuangkou=$("#usersForm");
+    	$(".yirentable tr").not(".firsttr").remove()
+    	$.basewindow("新增登陆帐号",$chuangkou,548,364);	
+    	if($("#usersForm select option").length==0){
+    		$.ajax({
+				type:"POST",
+				cache:false,
+				contentType:"application/json;charset=utf-8",
+				url:"${pageContext.request.contextPath}/roles/readList.do"
+			}).done(function (data){
+				$(data).each(function(){
+					$("#usersForm select").append("<option value="+ $(this)[0].id+">"+ $(this)[0].name+"</option>");
+				});
+			}).error(function(jqXHR, textStatus, errorThrown){});
+    	}
+    });
+    $("#usersForm .next2").click(function(){
+		var roleId = "";
+		var $self=$(this);
+		$("#usersForm select option:checked").each(function(i){
+			roleId += $(this).val()+",";
+		});
+		var data = {
+			userId:$(".yirentable .selected td:first").text(),
+			roleId:roleId
+		}
+		$.ajax({
+			type:"POST",
+			show:"slide",
+			dataType:"json",
+			data: JSON.stringify(data),  
+    	    contentType: "application/json; charset=utf-8",
+			url:"${pageContext.request.contextPath}/users/save.do"
+		}).done(function(data){
+   			$("#usersForm").appendTo($("body")).hide();
+			$(".basewindow").remove();
+            $(".zhezhao-basewindow").remove();
+            if(data.resultStatus == 101){
+            	$.threesecond("此用户以存在，请选择其他用户!", 200, 100, 1000);
+            }
+            if(data.resultStatus == 200){
+            	 grid.refreshPage();
+            }
+		}).error(function(jqXHR, textStatus, errorThrown){});
+	});
+    
+    //搜索用户
+    $("#usersForm .next").click(function(){
+		var $self=$(this);
+		var data={
+			name:$self.prev("input").val(),
+			loadTable: "false",
+            seachEmp : "true"
+		}
+		$.ajax({
+	        type: "POST",
+	        url: "${pageContext.request.contextPath}/user/search.do",
+	        cache: false,
+	        data: JSON.stringify(data),  
+	        contentType: 'application/json; charset=utf-8',
+	    }).done(function (data) {
+	    	$(".yirentable tr").not(".firsttr").remove()
+	    	$(data).each(function(index){
+	        	var $self=$(this)[0];
+	        	if(index==0){
+	        		$(".yirentable").append("<tr class='selected'><td hidden>"+$self.id+"</td><td>"+$self.num+"</td><td>"+$self.name+"</td><td>"+$self.aliasname+"</td></tr>");  	
+	        	}else{
+	        		$(".yirentable").append("<tr><td hidden>"+$self.id+"</td><td>"+$self.num+"</td><td>"+$self.name+"</td><td>"+$self.aliasname+"</td></tr>");
+	        	}
+	        });
+	    }).error(function (jqXHR, textStatus, errorThrown){});
+	});
+	$(".yirentable").delegate("tr:not('.firsttr')","click",function(){
+		var $self=$(this);
+		if($self.hasClass("selected")){
+			$self.removeClass("selected");
+		}else{
+			$self.siblings("tr").removeClass("selected");
+			$self.addClass("selected");
+		}
+	});
+	
+	//删除
+	$(".control .del").click(function(){
+		if(grid.getSelectedRow().length>0){
+			var id = grid.getRowRecord(grid.getSelectedRow()).id;
+			$.yesorno("是否删除？", 300, 160,function(){
+    		 	var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				$.ajax({type:"GET",dataType:"json",url:"${pageContext.request.contextPath}/users/delete.do?t="+new Date().getTime(),
+					data:"id="+id,
+					success:function(data){
+						if(data.resultStatus == 100)
+							$.threesecond("删除失败!", 200, 100, 1000);  	
+						else{
+							grid.refreshPage();
+							$.threesecond("删除成功!", 200, 100, 1000);
+						}
+					}
+				});
+		    },function(){
+				$.threesecond("看来还是手下留情了!", 200, 100, 1000);    	 
+		    });
+		}else{
+            $.threesecond("请选择一行数据", 200, 100, 1000);
+    	}
+	});
+	
+	//修改角色
+	$(".control .midRole").click(function(){
+		if(grid.getSelectedRow().length>0){
+			var id = grid.getRowRecord(grid.getSelectedRow()).id;
+			var $chuangkou=$("#userMidForm");
+			var editurl = "${pageContext.request.contextPath}/roles/readList.do";
+    		$.basewindow("修改角色",$chuangkou,320,204);
+    		$("#id").val(id);
+	    		$.ajax({
+					type:"POST",
+					dataType : "json",
+    					url : editurl,
+    					data : "id=" + id,
+    					show : "slide",
+    					success : function(data) {
+    					var $data = data.data;
+    					if( $data!= null && data.resultStatus == 200){
+						$("#userMidForm #roleId").combogrid("setValues", $data.roleId);
+						}
+					},
+				error : function(data) {}
+    				});
+		}else{
+            $.threesecond("请选择一行数据", 200, 100, 1000);
+    	}
+	});
+	$("#userMidForm .midbut").click(function(){
+		var roleId =$("#userMidForm #roleId").combobox("getValues").join();
+		var $self=$(this);
+		
+		var data = {
+			id:$("#id").val(),
+			roleId:roleId
+		}
+		$.ajax({
+			type:"POST",
+			show:"slide",
+			dataType:"json",
+			data: JSON.stringify(data),  
+    	    contentType:"application/json; charset=utf-8",
+			url:"${pageContext.request.contextPath}/users/updateRoleUsers.do"
+		}).done(function(data){
+			grid.refreshPage();
+   			$("#userMidForm").appendTo($("body")).hide();
+			$(".basewindow").remove();
+            $(".zhezhao-basewindow").remove();
+		}).error(function(jqXHR, textStatus, errorThrown){});
+	});
+	
+	//重置密码
+	$(".control .restPwd").click(function(){
+		if(grid.getSelectedRow().length>0){
+			var $chuangkou=$("#userRestForm");
+			$("#id").val(grid.getRowRecord(grid.getSelectedRow()).id);
+    		$.basewindow("重置密码",$chuangkou,270,304);
+		}else{
+            $.threesecond("请选择一行数据", 200, 100, 1000);
+    	}
+	});
+	$("#userRestForm .resbut").click(function(){
+		var $self=$(this);
+		if($("#pwd").val().length < 5){
+			$.threetop("密码长度能少于6位!")
+			return;
+		}
+		if($("#pwd").val() == $("#npwd").val()){
+			var data = {
+				id:$("#id").val(),
+				pwd:$("#pwd").val()
+			}
+			$.ajax({
+				type:"POST",
+				show:"slide",
+				dataType:"json",
+				data: JSON.stringify(data),  
+		   	    contentType:"application/json; charset=utf-8",
+				url:"${pageContext.request.contextPath}/users/updatePasswd.do"
+			}).done(function(data){
+				grid.refreshPage();
+		  		$("#userRestForm").appendTo($("body")).hide();
+				$(".basewindow").remove();
+		           $(".zhezhao-basewindow").remove();
+			}).error(function(jqXHR, textStatus, errorThrown){});
+		}else{
+			$.threetop("两次输入密码不一致!")
+		}
+	});
+	
+	
+});
+</script>
+<script>
+$(function() {
+	$("#userMidForm #roleId").combogrid(
+				{
+					panelWidth : 500,
+					method : "POST",
+					datatype : "json",
+					url : "${pageContext.request.contextPath}/branchLogin/readPagesAllRole.do",
+					mode : "remote",
+					fitColumns : true,
+					rownumbers : true,
+					pagination : true,
+					idField : "id",
+					textField : "name",
+					pageSize : 50,
+					pageList : [ 5, 10, 20, 30, 40, 50 ],
+					columns : [ [ {
+						field : "name",
+						title : "角色名称",
+						width : 120,
+						sortable : true
+					} ] ],
+					keyHandler : {
+						up : function() { },
+						down : function() { },
+						enter : function() { },
+						query : function(q) {
+							if (q != null && q != "") {
+								$("#userMidForm #roleId").combogrid("grid").datagrid(
+										"reload", {
+											"filter" : q
+										});
+								$("#userMidForm #roleId").combogrid("setValue", q);
+							}
+						}
+					}
+				});
+});	
+</script>
+</head>
+<body class="custom-scroll">
+    <div class="right-one fsize18 fweightbold clearFix">
+	   		<div class="fl">
+	   			<span class="refresh fl"></span>
+	   		</div>
+	   		<div class="fr">
+	   			<span class="rName fl"></span>
+	   			<span class="username fl">${user.user.accounts}</span>
+	   			<span class="fl">, 欢迎来到<spring:message code="title"/></span>
+	   			<a href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+	   		</div>
+	   </div>
+	<div class="rightPadd">
+		<div class="right-twohalf">
+			<span>首页</span> 
+			<span>></span>
+			<span>系统设置</span> 
+			<span>></span>
+			<span class="color99">登录账号</span>
+		</div>
+
+		<p class="control"><jsp:include page="attsCommon.jsp"></jsp:include></p>
+
+		<div class="custom-scroll thistable"  style="overflow:auto; background-color:#fff; ">
+			<table id="searchTable"class="table tablelist">
+				<tr class="firsttr">
+			        <th w_index="id" w_align="center" width="1%;" w_hidden="true">id</th>
+			        <th w_num="line" w_align="center" width="1%;">序号</th>
+			        <th w_index="accounts" w_align="center" width="1%;">登陆帐号</th>
+			        <th w_index="phone" w_align="center" width="1%;">联系电话</th>
+			        <th w_index="email" w_align="center" width="1%;">邮件地址</th>
+			        <th w_index="roles" w_align="center" width="1%;">角色权限</th>
+			        <th w_index="status" w_align="center" width="1%;">帐号状态</th>
+			        <th w_index="createDT" w_align="center" width="1%;">创建时间</th> 
+		        	<th w_align="center">备注</th>
+		   		</tr>
+			</table>
+			<form id="usersForm" style="display:none;margin-left:20px;margin-right:20px;">
+				<input type="hidden" name="id" id="id">
+				<div class="clearFix">
+					<p class="searC fl">
+						<input type="text" name="name" id="name" style="width:203px;" maxlength="400" class="input" placeholder="姓名/员工号">
+						<span class="next">搜索</span>
+					</p>
+					<div class="fr">
+						<span class="fl choose">选择角色</span>
+						<select class="fr" name="xxx" id="xxx"></select>
+					</div>
+				</div>
+				
+				<div class="custom-scroll" style="position:relative;margin-top:20px;height:120px;overflow:auto;padding:10px 20px; ">
+					<table style="width:100%" class="yirentable">
+						<tr class="firsttr">
+							<th hidden>id</th>
+							<th width="33%">员工号</th>
+							<th width="33%">真实姓名</th>
+							<th width="34%">艺名</th>
+						</tr>
+					</table>
+				</div>
+				
+				<p class="bottom">
+					<input type="hidden" name="id" id="id" value="">
+					<span class="next2">提交</span>&nbsp;&nbsp;&nbsp;&nbsp;
+					<input class="cancel" type="reset" name="Input" value="关闭">
+				</p>
+			</form>
+			<div id="userMidForm"style="display:none;margin-left:20px;margin-right:20px;">
+				<div class="clearFix">
+					<span class="fl choose">选择角色</span>
+					<td><input id="roleId" name="roleId" style="width:200px;"
+ 					data-options="multiple:true" ></td>
+				</div>
+				<p class="bottom2"><span class="midbut">修改</span>
+				&nbsp;&nbsp;&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="关闭"></p>
+			</div>
+			<div id="userRestForm" style="display:none;margin-left:20px;margin-right:20px;">
+				<p>新密码</p>
+				<p><input type="password" name="pwd" id="pwd" style="width:200px;" maxlength="400" class="input"></p>
+				<p>确认密码</p>
+				<p><input type="password" name="npwd" id="npwd" value="" style="width:200px;" maxlength="400" class="input"></p>
+				<p><span class="resbut" style="margin-right:20px;border: 1px solid #ddd;text-align: center;height: 32px;line-height: 32px;display: inline-block;color: #fff;background-color: #e35d00;width: 82px;padding: 0px 20px;border-radius: 5px;margin-right: 10px;cursor: pointer;">确定</span>
+				&nbsp;&nbsp;&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="关闭"></p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

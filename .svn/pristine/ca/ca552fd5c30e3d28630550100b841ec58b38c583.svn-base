@@ -1,0 +1,534 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>直播平台</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <jsp:include page="common.jsp"></jsp:include>
+    <jsp:include page="bootstarp.jsp"></jsp:include>
+    <style>
+        body {
+            height: 100%;
+            min-width: 200px;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .table>tbody+tbody{
+        	border:none;
+        }
+        .table tr td{
+         	border:1px solid #ddd;
+        }
+        .bg83{
+        	height:44px;
+        	line-height:44px;
+        	margin-bottom: 20px;
+        }
+        .section{
+        	width:100%;
+        	margin-bottom:12px; 
+        }
+        .section lable{
+        	width:112px;
+        	text-align:right;
+        	display:inline-block; 
+        }
+       
+        .control{
+        	margin-left:-174px; 
+        }
+    </style>
+    <script>
+        $(function () {
+        	$(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+        
+            //数据获取
+            var dateViewModel = function () {
+                var self = this;
+                self.Apps = ko.observableArray();
+                var AppViewModel = function (root, data, index) {
+                    var self = this;
+                    self.data = ko.observable(data);
+                    self.Index = ko.observable(index + 1);
+                    self.Id = ko.observable(data.id);
+                    self.Name = ko.observable(data.name);
+                    self.Charfirst = ko.observable(data.chars[0]);
+                    self.Charindex = ko.observable(data.chars.length);
+                    self.PlatManager = ko.observable(data.platManager);
+                    self.FormGenre = ko.observable(data.formGenre);
+                    self.IncomeGenre = ko.observable(data.incomeGenre);
+                    self.Remarks = ko.observable(data.remarks);
+                    self.Tax = ko.observable(data.tax);
+                    //数组
+                    self.Chars = ko.observableArray();
+                    var CharViewModel = function (father, data, index) {
+                        var self = this;
+                        self.Char = ko.observable(data);
+                    };
+                    $(data.chars.splice(1)).each(function (index, item) {
+                        self.Chars.push(new CharViewModel(self, this, index));
+                    });
+                    
+                    //click事件
+                    self.selectcolor = ko.observable("");
+                    self.click = function () {
+                        $(root.Apps()).each(function (index, item) {
+                            item.selectcolor("");
+                        });
+                        if (root.SelectApp().Id() == self.Id()) {
+                            self.selectcolor("");
+                            var data = {
+                                id: ""
+                            };
+                            root.SelectApp(new SelectAppViewModel(root, data));
+                        }else {
+                            self.selectcolor("selected");
+                            root.SelectApp(new SelectAppViewModel(self, self.data()));
+                        }
+                    };
+                };
+
+                var SelectAppViewModel = function (root, data) {
+                    var self = this;
+                    if (data != null) {
+                        self.data = ko.observable(data);
+                        self.Id = ko.observable(data.id);
+                    };
+                }
+                //得到初始数据
+                self.getapps = function () {
+                    $.ajax({
+                        type: "POST",
+                        url: "${pageContext.request.contextPath}/plats/readPages.do?pageSize=50&curPage=1&sortName=id&sortOrder=asc",
+                        cache: false,
+                        contentType: "application/json; charset=utf-8",
+                        displayBlankRows: false,
+                        displayPagingToolbarOnlyMultiPages: true
+                    }).done(function (data) {
+                        $(data.data).each(function (index, item) {
+                            self.Apps.push(new AppViewModel(self, item, index));
+                        });
+                    }).error(function (jqXHR, textStatus, errorThrown) {
+                    });
+                };
+                self.firstselected = function () {
+                    var data = {
+                        id: ""
+                    };
+                    self.SelectApp = ko.observable(new SelectAppViewModel(self, data));
+                };
+                //初始化
+                self.init = function () {
+                    self.getapps();
+                    self.firstselected();
+                };
+                self.init();
+            }
+            ko.applyBindings(new dateViewModel());
+            //新增
+            $(".control .add").click(function () {
+                var $chuangkou = $("#addnewpeople");
+                $chuangkou.find(".toomore span").parent("p").prev("p").remove();
+                $chuangkou.find(".toomore span").parent("p").remove();
+                $chuangkou.find(".addpingtaihao").show();
+                $chuangkou.find(".toaddpingtaihao").click();
+                $.basewindow("添加直播平台", $chuangkou, 800, 536);
+                $(".basewindow").addClass("custom-scroll");
+
+            })
+           
+            //修改
+            $(".control .mid").click(function () {
+                var $chuangkou = $("#updatanewpeople");
+                $chuangkou.find(".toomore span").parent("p").prev("p").remove();
+                $chuangkou.find(".toomore span").parent("p").remove();
+                $chuangkou.find(".addpingtaihao").show();
+                if ($(".selected").length > 0) {
+                    var id = $(".selected td:first").text();
+                    var editurl = "${pageContext.request.contextPath}/plats/edit.do?t=" + new Date().getTime();
+                    $.basewindow("修改直播平台", $chuangkou, 700,500);
+                    $(".basewindow").addClass("custom-scroll");
+                    $.ajax({
+                        type: "get",
+                        dataType: "json",
+                        url: editurl,
+                        data: "id=" + id,
+                        show: "slide",
+                        success: function (data) {
+                            $chuangkou.find("#id").val(data.id);
+                            $chuangkou.find("#platName").val(data.name);
+                            $chuangkou.find("#remarks").val(data.remarks);
+                            $chuangkou.find("#empids").combogrid("setValue", data.platManager);
+                            $chuangkou.find("#tax").val(data.tax);
+                            if (data.formGenre == "PAIMAI") {
+                                $chuangkou.find("#formGenre").val("0").selected;
+                                $(data.chars).each(function (index) {
+                                    $chuangkou.find(".toaddpingtaihao").click();
+                                    $chuangkou.find("[name='channels']").eq(index).val(this);
+                                    $chuangkou.find("[name='channels']").eq(index).addClass("midchannel");
+                                    $chuangkou.find("[name='channels']").eq(index).attr({ "disabled": "disabled" });
+                                });
+                            } else if (data.formGenre == "ZHIBOJIAN") {
+                                $chuangkou.find("#formGenre").val("1").selected;
+                                $chuangkou.find(".formGenre").change();
+                            }
+                            if (data.incomeGenre == "SHUIQIAN") {
+                                $("#incomeGenre").val("0").selected;
+                            } else if (data.incomeGenre == "SHUIHOU") {
+                                $("#incomeGenre").val("1").selected;
+                            } else if (data.incomeGenre == "KAIPIAOSHUI") {
+                                $("#incomeGenre").val("2").selected;
+                            }
+                        },
+                        error: function (data) {}
+                    });
+                }else {
+                    $.threesecond("请先选择", 200, 100, 1000);
+                }
+            })
+            //删除
+            $(".control .del").click(function () {
+                if ($(".selected").length > 0) {
+                    var $yes = function () {
+                        var id = $(".selected td:first").text();
+                        var delUrl = "${pageContext.request.contextPath}/plats/delete.do?t=" + new Date().getTime();
+                        $.ajax({
+                            type: "get",
+                            dataType: "json",
+                            url: delUrl,
+                            data: "id=" + id,//要发送的数据
+                            success: function (data) {
+                                if (data.resultStatus == 200) {
+                                    $(".table .selected").remove();
+                                } else {
+                                    $.threetop("平台使用中不能删除!");
+                                }
+                            }, error: function (data) { }
+                        });
+                    }
+                    var $no = function () { };
+                    $.yesorno("是否删除？", 300, 160, $yes, $no);
+                }
+                else {
+                    $.threesecond("请先选择", 200, 100, 1000);
+                }
+            });
+            //添加频道号
+            $(".toaddpingtaihao").click(function () {
+                var $self = $(this);
+                $self.parent(".addpingtaihao").append('<p style="">频道号：</p><p class="toomore"><input type="text" id="channels" name="channels" maxlength="400" class="input w200"><span style="cursor:pointer;margin-left:20px;">-删除频道号</span></p>')
+                $(".basewindow").css({ height: "+=64px" })
+            })
+            //删除频道号
+            $(".addpingtaihao").delegate(".toomore span", "click", function () {
+                var $self = $(this);
+                if ($self.prev("input").hasClass("midchannel")) {
+                    var channels = $self.prev("input").val();
+                    var platId = $("#updatanewpeople #id").val();
+                    $.ajax({
+                        type: "get",
+                        dataType: "json",
+                        url: "${pageContext.request.contextPath}/plats/validationChannel.do?t=" + new Date().getTime(),
+                        data: "id=" + platId + "&channels=" + channels,
+                        success: function (data) {
+                            if (data.resultStatus == 200) {
+                                $self.parent("p").prev("p").remove();
+                                $self.parent("p").remove();
+                                $(".basewindow").css({ height: "-=64px" });
+                            } else {
+                                $.threetop("频道使用中不能删除!");
+                            }
+                        }, error: function (data) { }
+                    });
+                } else {
+                    $self.parent("p").prev("p").remove();
+                    $self.parent("p").remove();
+                    $(".basewindow").css({ height: "-=64px" });
+                }
+            })
+            //排麦or个人去掉子频道
+            $(".formGenre").change(function () {
+                var $self = $(this);
+                var length = $self.parent().parent("div").next(".addpingtaihao").find(".toomore").length * 64 + 62;
+                if ($self.val() == 0) {
+                    $self.parent().parent("div").next(".addpingtaihao").show();
+                    $(".basewindow").css({ height: "+=" + length + "px" })
+                }else {
+                    $self.parent().parent("div").next(".addpingtaihao").hide();
+                    $(".basewindow").css({ height: "-=" + length + "px" })
+                }
+            });
+            //提交+判断(新增)
+            $("#addnewpeople .okok").click(function () {
+                var platName = $("#addnewpeople #platName").val();
+                if (platName == "" || platName == null) {
+                    $.threetop("请填写平台名称!");
+                }else {
+                    if ($("#addnewpeople #formGenre").val() == 1) {
+                        $("#addnewpeople [name='channels']").remove();
+                    }else {
+                        $("#addnewpeople [name='channels']").removeAttr("disabled");
+                    }
+                    $("#addnewpeople").submit();
+                }
+            });
+            //提交+判断(修改)
+            $("#updatanewpeople .okok").click(function () {
+                var platName = $("#updatanewpeople #platName").val();
+                if (platName == "" || platName == null) {
+                    $.threetop("请填写平台名称!");
+                }else {
+                    if ($("#updatanewpeople #formGenre").val() == 1) {
+                        $("#updatanewpeople [name='channels']").remove();
+                    }else {
+                        $("#updatanewpeople [name='channels']").removeAttr("disabled");
+                    }
+                    $("#updatanewpeople").submit();
+                }
+            });
+        });
+
+
+    </script>
+    <script>
+        $(function () {
+            $("#empid").combogrid({
+                panelWidth: 500,
+                method: "POST",
+                datatype: "json",
+                url: "${pageContext.request.contextPath}/department/readPagesSkip.do",
+                mode: "remote",
+                fitColumns: true,
+                rownumbers: true,
+                pagination: true,
+                idField: "id",
+                textField: "name",
+                pageSize: 30,
+                pageList: [5, 10, 20, 30, 40, 50],
+                columns: [[
+                    { field: "name", title: "姓名", width: 120, sortable: true }
+                ]],
+                onLoadSuccess:function(q,w){
+                    //$('#cc').combogrid('grid').datagrid('selectRecord',2);
+                    var p  = $('#cc').val() ;
+                    $('#cc').combogrid('setValue',p)
+                } ,
+                keyHandler: {
+                    up: function () { },
+                    down: function () { },
+                    enter: function () { },
+                    query: function (q) {
+                        if (q != null && q != "") {
+                            $("#empid").combogrid("grid").datagrid("reload", { "filter": q });
+                            $("#empid").combogrid("setValue", q);
+                        }
+                    }
+                }
+            });
+            $("#empids").combogrid({
+                panelWidth: 500,
+                method: "POST",
+                datatype: "json",
+                url: "${pageContext.request.contextPath}/department/readPagesSkip.do",
+                mode: "remote",
+                fitColumns: true,
+                rownumbers: true,
+                pagination: true,
+                idField: "id",
+                textField: "name",
+                pageSize: 30,
+                pageList: [5, 10, 20, 30, 40, 50],
+                columns: [[
+                    { field: "name", title: "姓名", width: 120, sortable: true }
+                ]],
+                keyHandler: {
+                    up: function () { },
+                    down: function () { },
+                    enter: function () { },
+                    query: function (q) {
+                        if (q != null && q != "") {
+                            $("#empid").combogrid("grid").datagrid("reload", { "filter": q });
+                            $("#empid").combogrid("setValue", q);
+                        }
+                    }
+                }
+            });
+        })
+    </script>
+</head>
+<body class="custom-scroll">
+    <div class="right-one fsize18 fweightbold clearFix">
+	   		<div class="fl">
+	   			<span class="refresh fl"></span>
+	   		</div>
+	   		<div class="fr">
+	   			<span class="rName fl"></span>
+	   			<span class="username fl">${user.user.accounts}</span>
+	   			<span class="fl">, 欢迎来到<spring:message code="title"/></span>
+	   			<a href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+	   		</div>
+	   </div>
+    <div class="rightPadd">
+    	<div class="right-twohalf">
+			<span>首页</span> 
+			<span>></span>
+			<span>直播系统</span> 
+			<span>></span>
+			<span class="color99">直播平台</span>
+    	</div>
+	    <div class="control">
+	        <jsp:include page="attsCommon.jsp"></jsp:include>
+	    </div>
+	    <div class="thistable custom-scroll">
+	        <table id="searchTable" class="table yitablelist">
+	            <tr class="firsttr">
+	                <th w_index="ID" w_align="center" hidden width="1%;">id</th>
+	                <th w_num="line" w_align="center" width="1%;">序号</th>
+	                <th w_index="Name" w_align="center" width="1%;">平台名称 </th>
+	                <th w_index="formGenre" w_align="center" width="1%;">平台类型 </th>
+	                <th w_index="CHAR" w_align="center" width="1%;">频道号</th>
+	                <th w_index="incomeGenre" w_align="center" width="1%;">收入类型 </th>
+	                <th w_index="platManager" w_align="center" width="1%;">平台管理人 </th>
+	                <th w_index="tax" w_align="center" width="1%;">税点 </th>
+	                <th w_align="center">备注</th>
+	            </tr>
+	            <thead></thead>
+	            <!-- ko foreach: Apps -->
+	            <tbody data-bind="click:click, css:selectcolor">
+	                <tr>
+	                    <td hidden data-bind="text:Id,attr: { rowspan: Charindex }">></td>
+	                    <td data-bind="text:Index,attr: { rowspan: Charindex }"></td>
+	                    <td data-bind="text:Name,attr: { rowspan: Charindex }"></td>
+	                    <td data-bind="text:FormGenre,attr: { rowspan: Charindex }"></td>
+	                    <td data-bind="text:Charfirst"></td>
+	                    <td data-bind="text:IncomeGenre,attr: { rowspan: Charindex }"></td>
+	                    <td data-bind="text:PlatManager,attr: { rowspan: Charindex }"></td>
+	                     <td data-bind="text:Tax,attr: { rowspan: Charindex }"></td>
+	                    <td data-bind="text:Remarks,attr: { rowspan: Charindex }"></td>
+	                </tr>
+	                <!-- ko foreach: Chars -->
+	                <tr>
+	                    <td data-bind="text:Char"></td>
+	                </tr>
+	                <!-- /ko -->
+	            </tbody>
+	            <!-- /ko -->
+	        </table>
+	
+	    </div>
+	    <form id="addnewpeople" action="${pageContext.request.contextPath}/plats/save.do" method="post" enctype="multipart/form-data" style="display:none;margin-left:44px;margin-right:44px;">
+	        <div class="section">
+	            <div class="clearFix">
+	            	<div class="fl">
+	            		<lable>平台名称：</lable>
+	            		<input type="text" id="platName" name="platName" maxlength="400" class="input w200">
+	            	</div>
+	            	<div class="fr">
+	            		<lable>收入类型：</lable>
+		                <select class="w200" id="incomeGenre" name="incomeGenre">
+		                    <option value="0">税前</option>
+		                    <option value="1">税后</option>
+		                    <option value="2">开票税</option>
+		                </select>
+	            	</div>
+	            </div>
+	        </div>
+	        
+	        <div class="section">
+	            <div class="clearFix">
+	            	<div class="fl">
+		            	<lable>平台主管：</lable>
+		            	<input id="empid" name="empid" maxlength="400" class="input w200">
+	            	</div>
+	            	<div class="fr">
+		            	<lable>平台类型：</lable>
+		                <select id="formGenre" name="formGenre" class="formGenre w200">
+		                    <option value="0">排麦直播间</option>
+		                    <option value="1">个人直播间</option>
+		                </select>
+	                </div>
+	            </div>
+	        </div>
+	        
+	        <div class="section">
+	            	<lable>平台劳务费税率：</lable>
+	            	<input type="number" id="tax" name="tax" maxlength="400" class="input w200">%
+	        </div>
+	        <div class="addpingtaihao" style="position:relative;margin-top:20px;padding:20px;border:1px solid #ddd">
+	            <p style="position:absolute;top:-10px;left:10px;background-color:#fff;padding:0px 10px">子频道</p>
+	            <p class="toaddpingtaihao" style="position:absolute;top:-22px;right:-1px;background-color:#fff;padding:0px 5px;border:1px solid #ddd;border-bottom:0px;cursor:pointer;">+添加频道号</p>
+	        </div>
+	        <div style="position:relative;margin-top:20px;padding:20px;border:1px solid #ddd">
+	            <p style="position:absolute;top:-10px;left:10px;background-color:#fff;padding:0px 10px">备注</p>
+	            <p style="margin-bottom:0;"><textarea id="remarks" name="remarks" rows=5 style="width:100%;" maxlength="400" class="input"></textarea></p>
+	        </div>
+	        <p class="bCenter">
+	            <input type="hidden" name="id" id="id" value="">
+	            <span class="okok">提交</span>&nbsp;&nbsp;&nbsp;&nbsp;
+	            <input class="cancel" type="reset" name="Input" value="关闭">
+	        </p>
+	    </form>
+	    <form id="updatanewpeople" action="${pageContext.request.contextPath}/plats/save.do" method="post" enctype="multipart/form-data" style="display:none;margin-left:20px;margin-right:20px;">
+	        <input type="hidden" name="id" id="id">
+	        <div style="display:inline-block;margin-right:100px;">
+	            <p>平台名称：</p>
+	            <p><input type="text" id="platName" name="platName" maxlength="400" class="input w200"></p>
+	        </div>
+	        <div style="display:inline-block">
+	            <p>收入类型：</p>
+	            <p>
+	                <select class="w200" id="incomeGenre" name="incomeGenre" >
+	                    <option value="0">税前</option>
+	                    <option value="1">税后</option>
+	                    <option value="2">开票税</option>
+	                </select>
+	            </p>
+	        </div>
+	        <div class="clear"></div>
+	        <div style="display:inline-block;margin-right:100px;">
+	            <p style="">平台主管：</p>
+	            <p><input id="empids" name="empids" maxlength="400" class="input w200"></p>
+	        </div>
+	        <div style="display:inline-block">
+	            <p>平台类型：</p>
+	            <p>
+	                <select id="formGenre" name="formGenre" class="formGenre w200">
+	                    <option value="0">排麦直播间</option>
+	                    <option value="1">个人直播间</option>
+	                </select>
+	            </p>
+	        </div>
+	        <div style="display:inline-block;margin-right:100px;">
+	            <p>平台劳务费税率：</p>
+	            <p><input type="number" id="tax" name="tax" maxlength="400" class="input w200">%</p>
+	        </div>
+	        <div class="addpingtaihao" style="position:relative;margin-top:20px;padding:20px;border:1px solid #ddd">
+	            <p style="position:absolute;top:-10px;left:10px;background-color:#fff;padding:0px 10px">子频道</p>
+	            <p class="toaddpingtaihao" style="position:absolute;top:-22px;right:-1px;background-color:#fff;padding:0px 5px;border:1px solid #ddd;border-bottom:0px;cursor:pointer;">+添加频道号</p>
+	        </div>
+	        <div style="position:relative;margin-top:20px;padding:20px;border:1px solid #ddd">
+	            <p style="position:absolute;top:-10px;left:10px;background-color:#fff;padding:0px 10px">备注</p>
+	            <p style="margin-bottom:0;"><textarea id="remarks" name="remarks" rows=5 style="width:100%;" maxlength="400" class="input"></textarea></p>
+	        </div>
+	        <p class="bCenter">
+	            <input type="hidden" name="id" id="id" value=""><span class="okok">提交</span>&nbsp;&nbsp;&nbsp;&nbsp;
+	            <input class="cancel" type="reset" name="Input" value="关闭">
+	        </p>
+	    </form>
+    </div>
+</body>
+</html>

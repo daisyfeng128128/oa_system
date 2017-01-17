@@ -1,0 +1,308 @@
+package com.baofeng.commons.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baofeng.commons.bean.MenuBean;
+import com.baofeng.commons.dao.MenuitemDAO;
+import com.baofeng.commons.entity.MenuItem;
+import com.baofeng.commons.entity.MenuItem.Dev;
+import com.baofeng.commons.entity.MenuItemDetails;
+import com.baofeng.commons.entity.Operator;
+import com.baofeng.commons.entity.Operator.Genres;
+import com.baofeng.commons.entity.Operator.Login;
+import com.baofeng.commons.entity.Operator.Sex;
+import com.baofeng.commons.entity.RoleDetails;
+import com.baofeng.commons.entity.Roles;
+import com.baofeng.commons.service.IMenuitemService;
+import com.baofeng.commons.service.IOperatorService;
+import com.baofeng.oa.dao.PlatformsDAO;
+import com.baofeng.oa.entity.BranchOffice;
+import com.baofeng.oa.entity.Platforms;
+import com.baofeng.oa.service.IBranchOfficeService;
+import com.baofeng.utils.Constants;
+import com.baofeng.utils.PageResult;
+
+@Service("menuitemService")
+public class MenuitemServiceImpl implements IMenuitemService {
+
+	@Autowired
+	private MenuitemDAO menuitemDAO;
+	@Autowired
+	private PlatformsDAO platformsDAO;
+	@Autowired
+	private IOperatorService operatorService;
+	@Autowired
+	private IBranchOfficeService branchOfficeService;
+
+	public MenuitemDAO getMenuitemDAO() {
+		return menuitemDAO;
+	}
+
+	public void setMenuitemDAO(MenuitemDAO menuitemDAO) {
+		this.menuitemDAO = menuitemDAO;
+	}
+
+	public IOperatorService getOperatorService() {
+		return operatorService;
+	}
+
+	public void setOperatorService(IOperatorService operatorService) {
+		this.operatorService = operatorService;
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public PageResult readAllPages(int rows, int page, Operator user) {
+		PageResult $page = this.menuitemDAO.readAllPages(rows, page, user);
+		return $page;
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public PageResult readMenuPages(int rows, int page, Roles user) {
+		PageResult $page = this.menuitemDAO.readAllPage(rows, page, user);
+		if ($page != null && $page.getRows().size() > 0) {
+			List<MenuBean> list = new ArrayList<MenuBean>();
+			for (Object o : $page.getRows()) {
+				MenuItem post = (MenuItem) o;
+				MenuBean bean = new MenuBean();
+				bean.setId(post.getId());
+				bean.setName(post.getName());
+				for (RoleDetails detailes : user.getDetails()) {
+					if (post.getUrl().equals(detailes.getItemUrl())) {
+						bean.setFlag(1);
+						break;
+					}
+				}
+				list.add(bean);
+			}
+			$page.setRows(list);
+		}
+		return $page;
+	}
+
+	@Override
+	public boolean saveInit() {
+		try {
+			Operator supers = this.operatorService.validation("super");
+			if (supers == null) {
+				supers = new Operator();
+				supers.setAccounts("super");
+				supers.setNumber(Integer.valueOf(-1));
+				supers.setPassword(Constants.hexToString("73757065723132332E636F6D"));
+				supers.setPhone("13601655231");
+				supers.setEmail("renlr@outlook.com");
+				supers.setGenrer(Genres.SUPERS);
+				supers.setSex(Sex.MAN);
+				supers.setIslogin(Login.YES);
+				this.operatorService.addUser(supers);
+			}
+			Operator admins = this.operatorService.validation("admins");
+			if (admins == null) {
+				admins = new Operator();
+				admins.setAccounts("admins");
+				admins.setNumber(Integer.valueOf(0));
+				admins.setPassword(Constants.hexToString("3132332E636F6D"));
+				admins.setPhone("13601655231");
+				admins.setEmail("renlr@outlook.com");
+				admins.setGenrer(Genres.MANAGER);
+				admins.setSex(Sex.MAN);
+				admins.setIslogin(Login.YES);
+				this.operatorService.addUser(admins);
+			}
+			if (!menuitemDAO.validateMenu()) {
+				createMenuItems();
+				List<Platforms> platList = this.platformsDAO.readPlatformsAlls();
+				if (platList != null && platList.size() > 0) {
+					for (Platforms plat : platList) {
+						this.updateMentItemPlatforms(String.valueOf("plats/show.do"), plat.getPlatName(), plat.getId().toString(), plat.getBranchs(), plat.getCreateDT());
+					}
+				}
+				List<BranchOffice> officList = this.branchOfficeService.findBranchOfficeList();
+				if (officList != null && officList.size() > 0) {
+					for (BranchOffice branch : officList) {
+						this.updateMentItemPlatforms("branchOff/show.do", branch.getIpgp(), branch.getId() + "", branch.getBranchs(), branch.getCreateDT());
+					}
+				}
+			}
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/** 初始化菜单 */
+	public void createMenuItems() {
+		MenuItem items1 = new MenuItem("人事系统", "/main.do", null, "member", 1, Dev.NO);
+		createMenuItem(items1);
+		createMenuItem(new MenuItem("员工档案", "emp/show.do", items1, null, 1, Dev.NO, "新增:add", "修改:mid", "删除:del", "离职:leave", "高级搜索:searchAll", "查看详情:views","转岗:transfer"));
+		createMenuItem(new MenuItem("试用员工", "emp/showProbationer.do", items1, null, 2, Dev.NO, "试用期调整:probation", "转正:become", "离职:leave"));
+		createMenuItem(new MenuItem("离职员工", "emp/empLeave.do", items1, null, 3, Dev.NO, "查看详情:views"));
+		createMenuItem(new MenuItem("员工生日", "emp/empBirth.do", items1, null, 4, Dev.NO));
+		createMenuItem(new MenuItem("部门管理", "department/show.do", items1, null, 5, Dev.NO, "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("职位管理", "positions/show.do", items1, null, 6, Dev.NO, "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("员工考勤", "empAttendance/show.do", items1, null, 7, Dev.NO, "保存:save"));
+		createMenuItem(new MenuItem("线上艺人", "actoresOnline/showOnlineLink.do", items1, null, 8, Dev.NO, "新增:add", "修改:mid", "删除:del", "离职:leave", "查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("线下艺人", "actoresOnline/showOfflineLink.do", items1, null, 9, Dev.NO, "新增:add:N", "修改:mid", "删除:del:N", "视频地址:updateUrl", 
+				"查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("线上管理", "manager/showOnlineLink.do", items1, null, 10, Dev.NO, "新增:add", "修改:mid", "删除:del", "离职:leave", "查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("线下管理", "manager/showLink.do", items1, null, 11, Dev.NO, "新增:add", "修改:mid", "删除:del:N", "查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("星探管理", "talent/show.do", items1, null, 12, Dev.NO, "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("员工转岗", "empTransfer/show.do", items1, null, 13, Dev.NO, "转岗申请:add" ,"立即执行:pass"));
+
+		MenuItem items2 = new MenuItem("直播系统 ", "/main.do", null, "platforms", 2, Dev.NO);
+		createMenuItem(items2);
+		createMenuItem(new MenuItem("直播平台", "plats/show.do", items2, null, 1, Dev.NO, "隐藏菜单:menu:N", "新增:add", "修改:mid", "删除:del", "查看:views:N"));
+		createMenuItem(new MenuItem("收益明细", "finEarningsIncome/show.do", items2, null, 2, Dev.NO));
+		createMenuItem(new MenuItem("艺人管理", "actores/show.do", items2, null, 2, Dev.NO, "新增:add", "修改:mid", "停播:del"));
+		createMenuItem(new MenuItem("频道助理", "platManager/show.do", items2, null, 3, Dev.NO, "新增:add", "删除:del"));
+		createMenuItem(new MenuItem("场控人员", "thirdManager/show.do", items2, null, 4, Dev.YES, "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("平台应收", "months/show.do", items2, null, 5, Dev.NO, "保存:save", "充值:topUp:N"));
+		createMenuItem(new MenuItem("提交月报", "outlay/show.do", items2, null, 6, Dev.NO, "保存:save", "导入:impr", "业务审批:pass", "财务审批:finalpass", "驳回:reject", "提交审核:audit",
+				"营收总表:outlay/show:N", "线下管理:managerOffline/show:N", "线上管理:managerOnline/show:N", "频道充值:maintainOutlay/show:N", "运营支出:activityOutlay/show:N",
+				"线下艺人:offlineIncome/show:N", "线上艺人:onlineIncome/show:N"));
+		createMenuItem(new MenuItem("月报总表", "totaloutlay/show.do", items2, null, 7, Dev.NO, "营收总表:totaloutlay/show:N"));
+		createMenuItem(new MenuItem("项目管理", "projectManagement/show.do", items2, null, 8, Dev.NO, "隐藏菜单:menu:N", "新增:add", "修改:mid", "删除:del", "查看:views:N"));
+
+		MenuItem item3 = new MenuItem("平台人员", "/main.do", null, "actor", 3, Dev.NO);
+		createMenuItem(item3);
+		createMenuItem(new MenuItem("薪资调整(艺人)", "adjusts/show.do", item3, null, 1, Dev.NO, "调薪申请:add", "删除:del", "通过:passed", "拒绝:reject"));
+		createMenuItem(new MenuItem("转正申请", "positiveReview/show.do", item3, null, 2, Dev.NO, "转正申请:app", "延长试用期:ext"));
+		createMenuItem(new MenuItem("转正审核", "positiveReview/showCh.do", item3, null, 3, Dev.NO, "通过:pass", "延长试用期:ext","人事转正:reg"));
+		createMenuItem(new MenuItem("线上艺人", "actoresOnline/showOnline.do", item3, null, 4, Dev.NO, "新增:add", "修改:mid", "删除:del", "离职:leave",
+				"查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("线下艺人", "actoresOnline/showOffline.do", item3, null, 5, Dev.NO, "新增:add", "修改:mid", "删除:del", "视频地址:updateUrl", 
+				"查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("离职艺人", "actoresOnline/showLeave.do", item3, null, 6, Dev.NO));
+		createMenuItem(new MenuItem("线上管理", "manager/onlineShow.do", item3, null, 7, Dev.NO, "新增:add", "修改:mid", "删除:del", "离职:leave", "查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("线下管理", "manager/show.do", item3, null, 8, Dev.NO, "新增:add", "修改:mid", "删除:del", "查看全部:views:N","查看详情:viewsplat"));
+		createMenuItem(new MenuItem("离职助理", "manager/showLeave.do", item3, null, 9, Dev.NO));
+		createMenuItem(new MenuItem("面试管理", "interview/show.do", item3, null, 10, Dev.NO, "查看全部:all", "面试总表:interview/showAll:N", "初试:interview/preTest:N",
+				"平台审核:interview/check:N", "待处理:interview/pending:N", "待入职:interview/waitEntry:N", "未通过:interview/notpass:N", "已通过:interview/ypass:N"));
+		createMenuItem(new MenuItem("成本校验", "costCheck/show.do", item3, null, 11, Dev.NO));
+
+		MenuItem item4 = new MenuItem("财务系统", "/main.do", null, "finance", 0, Dev.NO);
+		createMenuItem(item4);
+		createMenuItem(new MenuItem("薪资查询", "finSalaries/showSalaries.do", item4, null, 2, Dev.NO));
+		createMenuItem(new MenuItem("艺人薪资", "finSalaries/actshow.do", item4, null, 3, Dev.NO, "发放工资:payoff", "计算工资:check", "显示全部:showAll", "查看详情:views"));
+		createMenuItem(new MenuItem("员工薪资", "finSalaries/show.do", item4, null, 4, Dev.NO, "发放工资:payoff", "查看详情:views"));
+		createMenuItem(new MenuItem("财务报表", "financialReports/show.do", item4, null, 5, Dev.NO, "校验:check"));
+		createMenuItem(new MenuItem("财务支出", "finCheck/showOPE.do", item4, null, 7, Dev.NO, "添加:add", "编辑:edit", "保存:save"));
+		createMenuItem(new MenuItem("工资统计", "salariesStatistics/show.do", item4, null, 9, Dev.NO));
+		createMenuItem(new MenuItem("大型充值", "bigtop/show.do", item4, null, 9, Dev.NO, "充值:add", "编辑:edit"));
+
+		MenuItem items7 = new MenuItem("日常办公", "/main.do", null, "process", 5, Dev.NO);
+		createMenuItem(items7);
+		createMenuItem(new MenuItem("预支薪资", "advance/show.do", items7, null, 1, Dev.NO, "预支申请:add", "同意:passed", "拒绝:reject", "还款:repay"));
+
+		MenuItem items5 = new MenuItem("个人中心", "/main.do", null, "personal", 6, Dev.NO);
+		createMenuItem(items5);
+		createMenuItem(new MenuItem("薪酬福利", "salaries/show.do", items5, null, 1, Dev.NO));
+		createMenuItem(new MenuItem("修改密码", "users/midPwd.do", items5, null, 2, Dev.NO));
+		createMenuItem(new MenuItem("申请中心", "menu/devshow.do", items5, null, 3, Dev.YES));
+		createMenuItem(new MenuItem("费用报销", "menu/devshow.do", items5, null, 4, Dev.YES));
+		createMenuItem(new MenuItem("活动借款", "menu/devshow.do", items5, null, 5, Dev.YES));
+		createMenuItem(new MenuItem("请假列表", "menu/devshow.do", items5, null, 6, Dev.YES));
+
+		MenuItem items6 = new MenuItem("系统设置", "/main.do", null, "setting", 7, Dev.NO);
+		createMenuItem(items6);
+		createMenuItem(new MenuItem("登陆帐号", "users/show.do", items6, null, 1, Dev.NO, "新增:add", "删除:del", "修改角色:midRole", "重置密码:restPwd"));
+		createMenuItem(new MenuItem("角色权限", "roles/show.do", items6, null, 2, Dev.NO, "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("公司管理", "branchOff/show.do", items6, null, 3, Dev.NO, "隐藏菜单:menu:N", "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("分公司登陆", "branchLogin/show.do", items6, null, 4, Dev.NO, "新增:add", "编辑:mid", "删除:del"));
+		createMenuItem(new MenuItem("菜单管理", "menus/show.do", items6, null, 6, Dev.YES, "新增:add", "修改:mid", "删除:del"));
+		createMenuItem(new MenuItem("请假列表", "menu/devshow.do", items6, null, 8, Dev.YES));
+		createMenuItem(new MenuItem("审校记录", "menu/devshow.do", items6, null, 10, Dev.YES));
+		createMenuItem(new MenuItem("系统日志", "mlog/show.do", items6, null, 12, Dev.NO));
+		
+		MenuItem items8 = new MenuItem("行政系统", "/main.do", null, "administration", 8, Dev.NO);
+		createMenuItem(items8);
+		createMenuItem(new MenuItem("采购申请", "purchaseApplication/show.do", items8, null, 1, Dev.NO, "新增:add", "修改:mid", "删除:del","查看详情:views"));
+		createMenuItem(new MenuItem("采购审核", "purchaseAudit/show.do", items8, null, 2, Dev.NO, "部门审核:deptpass","设备人员审核:equipass","负责人审核:personpass","总公司审核:headpass", "开始处理:start", "完成处理:end","查看详情:views"));
+	}
+
+	/**
+	 * 功能：添加修改平台权限
+	 * 
+	 * @param date
+	 * */
+	@Override
+	public void updateMentItemPlatforms(String url, String name, String key, Integer branchs, Date createDT) {
+		if (url != null && url.trim().length() > 0) {
+			MenuItem menu = this.readMenuItem(url);
+			if (menu != null) {
+				boolean flag = false;
+				if (menu.getDetails() != null && menu.getDetails().size() > 0) {
+					for (Iterator<MenuItemDetails> it = menu.getDetails().iterator(); it.hasNext();) {
+						MenuItemDetails details = it.next();
+						if (details.getOpkey().equals(key)) {
+							menu.getDetails().remove(details);
+							details.setOpName(name.trim());
+							menu.getDetails().add(details);
+							flag = true;
+							return;
+						}
+					}
+				}
+				if (!flag) {
+					MenuItemDetails details = new MenuItemDetails();
+					details.setItem(menu);
+					details.setOpName(name.trim());
+					details.setOpkey(key);
+					details.setBranchs(branchs);
+					details.setCreateDT(createDT);
+					this.menuitemDAO.getBaseDAO().save(details);
+				} else
+					this.menuitemDAO.saveMenuItem(menu);
+			}
+		}
+	}
+
+	@Override
+	public void deleteMentItemPlatforms(String url, String key) {
+		if (url != null && url.trim().length() > 0) {
+			MenuItem menu = this.readMenuItem(url);
+			if (menu != null) {
+				if (menu.getDetails() != null && menu.getDetails().size() > 0) {
+					for (Iterator<MenuItemDetails> it = menu.getDetails().iterator(); it.hasNext();) {
+						MenuItemDetails details = it.next();
+						if (details.getOpkey().equals(key)) {
+							menu.getDetails().remove(details);
+							details.setItem(null);
+							this.menuitemDAO.getBaseDAO().update(details);
+							this.menuitemDAO.getBaseDAO().delete(details);
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * 功能：读取菜单
+	 * */
+	@Override
+	public MenuItem readMenuItem(String url) {
+		if (url != null && url.trim().length() > 0) {
+			return this.menuitemDAO.readMenuItem(url);
+		}
+		return null;
+	}
+
+	@Override
+	public void createMenuItem(MenuItem menuItem) {
+		this.menuitemDAO.saveMenuItem(menuItem);
+	}
+
+	@Override
+	public List<MenuItem> readAllMenu() {
+		return this.menuitemDAO.readAllMenu();
+	}
+}

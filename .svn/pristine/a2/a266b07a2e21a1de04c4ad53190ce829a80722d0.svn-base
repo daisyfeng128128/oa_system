@@ -1,0 +1,121 @@
+package com.baofeng.oa.dao;
+
+import java.util.List;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Disjunction;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.oa.entity.ElectEquipent;
+import com.baofeng.oa.entity.OfficeSupplies;
+import com.baofeng.utils.DetachedCriteriaUtil;
+import com.baofeng.utils.IBaseDAO;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+@Repository("purchaseAuditDAO")
+public class PurchaseAuditDAO {
+	@Autowired
+	private IBaseDAO baseDAO;
+
+	public IBaseDAO getBaseDAO() {
+		return baseDAO;
+	}
+
+	public void setBaseDAO(IBaseDAO baseDAO) {
+		this.baseDAO = baseDAO;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public NPageResult readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer id,String fastArg, SearchFilter searchFilter, Integer type) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(ElectEquipent.class);
+			detachedCriteria.createAlias("employee", "employee");
+			if (fastArg != null && fastArg.trim().length() > 0) {
+				Disjunction disjunction = Restrictions.disjunction();
+				try {
+					disjunction.add(Restrictions.eq("employee.number", Integer.valueOf(fastArg)));
+					disjunction.add(Restrictions.like("employee.name", fastArg, MatchMode.ANYWHERE));
+					disjunction.add(Restrictions.like("employee.aliasname", fastArg, MatchMode.ANYWHERE));
+				} catch (Exception e) {
+					disjunction.add(Restrictions.like("employee.name", fastArg, MatchMode.ANYWHERE));
+					disjunction.add(Restrictions.like("employee.aliasname", fastArg, MatchMode.ANYWHERE));
+				}
+				detachedCriteria.add(disjunction);
+			}
+			if (id != null)
+				detachedCriteria.add(Restrictions.eq("depart.id", Integer.valueOf(id)));
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			detachedCriteria.addOrder(Order.asc("applyDT"));
+			DetachedCriteriaUtil.addSearchFilter(detachedCriteria, searchFilter);
+			return baseDAO.NfindByPages(detachedCriteria, pageSize, curPage);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	@SuppressWarnings("rawtypes")
+	public NPageResult readPagesOff(int pageSize, int curPage, String sortName,String sortOrder, String fastArg, SearchFilter searchFilter, Integer type, Integer id) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(OfficeSupplies.class);
+			detachedCriteria.createAlias("employee", "employee");
+			if (fastArg != null && fastArg.trim().length() > 0) {
+				Disjunction disjunction = Restrictions.disjunction();
+				try {
+					disjunction.add(Restrictions.eq("employee.number", Integer.valueOf(fastArg)));
+					disjunction.add(Restrictions.like("employee.name", fastArg, MatchMode.ANYWHERE));
+					disjunction.add(Restrictions.like("employee.aliasname", fastArg, MatchMode.ANYWHERE));
+				} catch (Exception e) {
+					disjunction.add(Restrictions.like("employee.name", fastArg, MatchMode.ANYWHERE));
+					disjunction.add(Restrictions.like("employee.aliasname", fastArg, MatchMode.ANYWHERE));
+				}
+				detachedCriteria.add(disjunction);
+			}
+			if (id != null)
+				detachedCriteria.add(Restrictions.eq("depart.id", Integer.valueOf(id)));
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			detachedCriteria.addOrder(Order.asc("applyDT"));
+			DetachedCriteriaUtil.addSearchFilter(detachedCriteria, searchFilter);
+			return baseDAO.NfindByPages(detachedCriteria, pageSize, curPage);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<ElectEquipent> findElectEquipentbyBranch(Integer branchs) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(ElectEquipent.class);
+			detachedCriteria.add(Restrictions.eq("branchs", branchs));
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			List<ElectEquipent> list = (List<ElectEquipent>) this.baseDAO.findAllByCriteria(detachedCriteria);
+			return list;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<OfficeSupplies> findOfficeSuppliesbyBranch(Integer branchs) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(OfficeSupplies.class);
+			detachedCriteria.add(Restrictions.eq("branchs", branchs));
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			List<OfficeSupplies> list = (List<OfficeSupplies>) this.baseDAO.findAllByCriteria(detachedCriteria);
+			return list;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+
+}

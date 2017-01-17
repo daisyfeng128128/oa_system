@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd  
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd  
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd  
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd"
+	default-lazy-init="true">
+
+	<!-- 线程执行器配置，用于任务注册 -->
+	<bean id="executor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="10" />
+		<property name="maxPoolSize" value="100" />
+		<property name="queueCapacity" value="500" />
+	</bean>
+
+	<!-- 设置调度 -->
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="autoCronTrigger" />
+				<ref bean="platformsCronTrigger" />
+				<ref bean="attendanceCronTrigger" />
+				<ref bean="makeNSalariesCronTrigger" />
+				<ref bean="EaringsIncomeCronTrigger" />
+				<ref bean="makeActCronTrigger" />
+				<ref bean="makeOutlayCronTrigger" />
+				<ref bean="costCheckCronTrigger" />
+				<ref bean="transferCronTrigger" />
+			</list>
+		</property>
+		<property name="taskExecutor" ref="executor" />
+	</bean>
+
+	<!-- 报表数据 -->
+	<bean id="platformsTask" class="com.baofeng.oa.quartz.CPlatformsTask" />
+	<bean id="platformsDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="platformsTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="platformsCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="platformsDetail" />
+		<property name="cronExpression" value="0 0 4 1 * ?" />
+	</bean>
+
+
+	<!-- 考勤数据 -->
+	<bean id="attendanceTask" class="com.baofeng.oa.quartz.AttendanceTask" />
+	<bean id="attendanceDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="attendanceTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="attendanceCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="attendanceDetail" />
+		<property name="cronExpression" value="0 0 2 1 * ?" />
+	</bean>
+
+	<!-- 转岗数据 -->
+	<bean id="transferTask" class="com.baofeng.oa.quartz.TransferTask" />
+	<bean id="transferDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="transferTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="transferCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="transferDetail" />
+		<property name="cronExpression" value="0 0 1 1 * ?" />
+	</bean>
+	
+	
+	<bean id="makeNSalariesTask" class="com.baofeng.oa.quartz.MakeNSalariesTask" />
+	<bean id="makeNSalariesDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="makeNSalariesTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="makeNSalariesCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="makeNSalariesDetail" />
+		<property name="cronExpression" value="0 0 4 13 * ?" />
+	</bean>
+
+	<!-- 艺人收益 -->
+	<bean id="EaringsIncomeTask" class="com.baofeng.oa.quartz.EaringsIncomeTask" />
+	<bean id="EaringsIncomeDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="EaringsIncomeTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="EaringsIncomeCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="EaringsIncomeDetail" />
+		<property name="cronExpression" value="0 0 6 16-28 * ?" />
+	</bean>
+
+	<!-- 处理离职 -->
+	<bean id="autoSubmitTask" class="com.baofeng.oa.quartz.AutoExecTask" />
+	<bean id="autoSubmitDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="autoSubmitTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="autoCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="autoSubmitDetail" />
+		<property name="cronExpression" value="0 0 1 25 * ?" />
+	</bean>
+
+	<!-- 计算工资 -->
+	<bean id="makeActSelariesTask" class="com.baofeng.oa.quartz.MakeActSelariesTask" />
+	<bean id="makeActSelariesDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="makeActSelariesTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="makeActCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="makeActSelariesDetail" />
+		<property name="cronExpression" value="0 30 4 15-30 * ?" />
+	</bean>
+
+	<!-- 计算报表 -->
+	<bean id="makeOutlayTask" class="com.baofeng.oa.quartz.MakeOutlayTask" />
+	<bean id="makeOutlayDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="makeOutlayTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="makeOutlayCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="makeOutlayDetail" />
+		<property name="cronExpression" value="0 20 4 15-30 * ?" />
+	</bean>
+
+	<!-- 艺人成本 -->
+	<bean id="costCheckTask" class="com.baofeng.oa.quartz.CostCheckTask" />
+	<bean id="costCheckDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="costCheckTask" />
+		<property name="targetMethod" value="doExec" />
+	</bean>
+	<bean id="costCheckCronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="costCheckDetail" />
+		<property name="cronExpression" value="0 0 4 * * ?" />
+	</bean>
+</beans>

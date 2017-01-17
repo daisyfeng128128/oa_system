@@ -1,0 +1,380 @@
+package com.baofeng.oa.service.impl;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.ElectEquipentBean;
+import com.baofeng.oa.bean.OfficeSuppliesBean;
+import com.baofeng.oa.dao.PurchaseDAO;
+import com.baofeng.oa.entity.BaseEnums.Auditp;
+import com.baofeng.oa.entity.BaseEnums.Purchase;
+import com.baofeng.oa.entity.ElectEquipent;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.entity.OfficeSupplies;
+import com.baofeng.oa.service.IDepartmentService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.oa.service.IPurchaseService;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+@Service("purchaseService")
+public class PurchaseServiceImpl implements IPurchaseService {
+	
+	@Autowired
+	private PurchaseDAO purchaseDAO;
+	@Autowired
+	private IDepartmentService departmentService;
+	@Autowired
+	private IEmployeeService employeeService;
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public NPageResult readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer type, String fastArg,
+			SearchFilter searchFilter) {
+		NPageResult rows = this.purchaseDAO.readPages(pageSize, curPage, sortName, sortOrder, fastArg,searchFilter,type);
+		if (rows != null && rows.getData().size() > 0) {
+			List<ElectEquipentBean> beanList = new ArrayList<ElectEquipentBean>();
+			for (Object o : rows.getData()) {
+				ElectEquipent electEquipent = (ElectEquipent) o;
+				ElectEquipentBean bean = new ElectEquipentBean();
+				bean.setId(electEquipent.getId());
+				bean.setNum(String.valueOf(electEquipent.getEmployee().getNumber()));
+				bean.setRealname(electEquipent.getRealname());
+				bean.setDepart(electEquipent.getDepart());
+				bean.setAuditp(electEquipent.getAuditp() == Auditp.PENDING ? "待审核" : (electEquipent.getAuditp() == Auditp.UNKNOWN)? "审核中" : (electEquipent.getAuditp() == Auditp.PASSED ? "通过" : "未通过"));
+				bean.setPurchase(electEquipent.getPurchase() == Purchase.UNKNOWN ? "采购中" : (electEquipent.getPurchase() == Purchase.PASSED ? "采购完成" : electEquipent.getPurchase() == Purchase.PENDING ? "待采购" : ""));
+				bean.setApplyDT(electEquipent.getApplyDT());
+				bean.setRemarks(electEquipent.getRemarks());
+				if (electEquipent.getCompleteDT() != null ) {
+					bean.setCompleteDT(electEquipent.getCompleteDT());
+				}
+				if (electEquipent.getRejectMsg() != null) {
+					bean.setRejectMsg(electEquipent.getRejectMsg());;
+				}
+				bean.setGoodsname(electEquipent.getGoodsname());
+				bean.setPurType(electEquipent.getPurType());
+				bean.setModel(electEquipent.getModel());
+				bean.setNumbers(electEquipent.getNumbers().toString());
+				bean.setPlace(electEquipent.getPlace());
+				bean.setTaxMoney(electEquipent.getTaxMoney().toString());
+				bean.setPriceMoney(electEquipent.getPriceMoney().toString());
+				bean.setTotalMoney(electEquipent.getTotalMoney().toString());
+				beanList.add(bean);
+			}
+			rows.setData(beanList);
+		}
+		return rows;
+	}
+
+	@Override
+	public boolean saveElectEquipent(List<ElectEquipentBean> list, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+		if (employee != null) {
+			ElectEquipent electEquipent = null;
+			try {
+				if (list != null) {
+					for (ElectEquipentBean bean : list) {
+						if (bean.getId() != null && bean.getId().intValue() > 0){
+							electEquipent=this.purchaseDAO.readElectEquipent(Integer.valueOf(bean.getId()));
+							electEquipent.setId(bean.getId());
+						}else{
+							electEquipent= new ElectEquipent();
+						}
+						electEquipent.setBranchs(branchs);
+						electEquipent.setPurType(Integer.valueOf(2));
+						electEquipent.setRealname(employee.getName());
+						if (bean.getDepart() != null) {
+							electEquipent.setDepart(employee.getDepart().getName());
+						}
+						electEquipent.setGoodsname(bean.getGoodsname());
+						electEquipent.setModel(bean.getModel());
+						electEquipent.setNumbers(Integer.valueOf(bean.getNumbers()));
+						electEquipent.setPlace(bean.getPlace());
+						electEquipent.setPriceMoney(new BigDecimal(bean.getPriceMoney()));
+						if (bean.getTaxMoney() != null) {
+							electEquipent.setTaxMoney(new BigDecimal(bean.getTaxMoney()));
+						}
+						electEquipent.setTotalMoney(new BigDecimal(bean.getTotalMoney()));
+						electEquipent.setUsername(bean.getUsername());
+						electEquipent.setApplyDT(bean.getApplyDT());
+						electEquipent.setAuditp(Auditp.PENDING);
+						electEquipent.setPurchase(Purchase.FAILED);
+						electEquipent.setEmployee(employee);
+						this.purchaseDAO.saveElectEquipent(electEquipent);
+					  }
+				   }
+				return true;
+				} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean deleteElectEquipent(Integer id, HttpServletRequest request) {
+		if (id != null && id.intValue() > 0) {
+			ElectEquipent electEquipent = this.purchaseDAO.readElectEquipent(id);
+			if (electEquipent != null && electEquipent.getAuditp() == Auditp.PENDING) {
+				electEquipent.setStatus(EntityStatus.DELETED);
+				if (this.purchaseDAO.saveElectEquipent(electEquipent)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public ElectEquipent readElectEquipent(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			return this.purchaseDAO.readElectEquipent(id);
+		}
+		return null;
+	}
+
+	@Override
+	public ElectEquipentBean readElectEquipentBean(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			ElectEquipent electEquipent = this.purchaseDAO.readElectEquipent(id);
+			if (electEquipent != null) {
+				ElectEquipentBean bean = new ElectEquipentBean();
+				bean.setId(electEquipent.getId());
+				bean.setNum(String.valueOf(electEquipent.getEmployee().getNumber()));
+				bean.setApplyDT(electEquipent.getApplyDT());
+				bean.setPurType(electEquipent.getPurType());
+				bean.setRealname(electEquipent.getRealname());
+				bean.setAuditp(electEquipent.getAuditp().toString());
+				bean.setDepart(electEquipent.getDepart());
+				bean.setGoodsname(electEquipent.getGoodsname());
+				bean.setModel(electEquipent.getModel());
+				bean.setUsername(electEquipent.getUsername());
+				bean.setPlace(electEquipent.getPlace());
+				bean.setNumbers(electEquipent.getNumbers().toString());
+				bean.setTaxMoney(electEquipent.getTaxMoney().toString());
+				bean.setPriceMoney(electEquipent.getPriceMoney().toString());
+				bean.setTotalMoney(electEquipent.getTotalMoney().toString());
+				return bean;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public NPageResult<?> readPagesR(int pageSize, int curPage, String sortName,String sortOrder, Integer type, String fastArg,
+			SearchFilter searchFilter) {
+		NPageResult rows = this.purchaseDAO.readPagesOff(pageSize, curPage, sortName, sortOrder, fastArg, searchFilter,type);
+		if (rows != null && rows.getData().size() > 0) {
+			List<OfficeSuppliesBean> beanList = new ArrayList<OfficeSuppliesBean>();
+			for (Object o : rows.getData()) {
+				OfficeSupplies officeSupplies = (OfficeSupplies) o;
+				OfficeSuppliesBean bean = new OfficeSuppliesBean();
+				bean.setId(officeSupplies.getId());
+				bean.setNum(String.valueOf(officeSupplies.getEmployee().getNumber()));
+				bean.setRealname(officeSupplies.getRealname());
+				bean.setPurType(officeSupplies.getPurType());
+				bean.setDepart(officeSupplies.getDepart());
+				bean.setAuditp(officeSupplies.getAuditp() == Auditp.PENDING ? "待审核" : (officeSupplies.getAuditp() == Auditp.UNKNOWN)? "审核中" : (officeSupplies.getAuditp() == Auditp.PASSED ? "通过" : "未通过"));
+				bean.setPurchase(officeSupplies.getPurchase() == Purchase.UNKNOWN ? "采购中" : (officeSupplies.getPurchase() == Purchase.PASSED ? "采购完成" : officeSupplies.getPurchase() == Purchase.PENDING ? "待采购" : ""));
+				bean.setApplyDT(officeSupplies.getApplyDT());
+				bean.setRemarks(officeSupplies.getRemarks());
+				if (officeSupplies.getCompleteDT() != null) {
+					bean.setCompleteDT(officeSupplies.getCompleteDT());
+				}
+				bean.setGoodsname(officeSupplies.getGoodsname());
+				if (officeSupplies.getRejectMsg() != null) {
+					bean.setRejectMsg(officeSupplies.getRejectMsg());
+				}
+				bean.setModel(officeSupplies.getModel());
+				bean.setNumbers(officeSupplies.getNumbers().toString());
+				bean.setTaxMoney(officeSupplies.getTaxMoney().toString());
+				bean.setPriceMoney(officeSupplies.getPriceMoney().toString());
+				bean.setTotalMoney(officeSupplies.getTotalMoney().toString());
+				beanList.add(bean);
+			}
+			rows.setData(beanList);
+		}
+		return rows;
+	}
+
+	@Override
+	public OfficeSupplies readOfficeSupplies(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			return this.purchaseDAO.readOfficeSupplies(id);
+		}
+		return null;
+	}
+
+	@Override
+	public OfficeSuppliesBean readOfficeSuppliesBean(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			OfficeSupplies officeSupplies = this.purchaseDAO.readOfficeSupplies(id);
+			if (officeSupplies != null) {
+				OfficeSuppliesBean bean = new OfficeSuppliesBean();
+				bean.setId(officeSupplies.getId());
+				bean.setNum(String.valueOf(officeSupplies.getEmployee().getNumber()));
+				bean.setApplyDT(officeSupplies.getApplyDT());
+				bean.setPurType(officeSupplies.getPurType());
+				bean.setRealname(officeSupplies.getRealname());
+				bean.setDepart(officeSupplies.getDepart());
+				bean.setGoodsname(officeSupplies.getGoodsname());
+				bean.setAuditp(officeSupplies.getAuditp().toString());
+				bean.setModel(officeSupplies.getModel());
+				bean.setNumbers(officeSupplies.getNumbers().toString());
+				bean.setTaxMoney(officeSupplies.getTaxMoney().toString());
+				bean.setPriceMoney(officeSupplies.getPriceMoney().toString());
+				bean.setTotalMoney(officeSupplies.getTotalMoney().toString());
+				return bean;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean deleteOfficeSupplies(Integer id, HttpServletRequest request) {
+		if (id != null && id.intValue() > 0) {
+			OfficeSupplies officeSupplies = this.purchaseDAO.readOfficeSupplies(id);
+			if (officeSupplies != null && officeSupplies.getAuditp() == Auditp.PENDING) {
+				officeSupplies.setStatus(EntityStatus.DELETED);
+				if (this.purchaseDAO.saveOfficeSupplies(officeSupplies)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean saveOfficeSupplies(List<OfficeSuppliesBean> list, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+		if (employee != null) {
+			OfficeSupplies officeSupplies = null;
+			try {
+				if (list != null) {
+					for (OfficeSuppliesBean bean : list) {
+						if (bean.getId() != null && bean.getId().intValue() > 0){
+							officeSupplies=this.purchaseDAO.readOfficeSupplies(Integer.valueOf(bean.getId()));
+							officeSupplies.setId(bean.getId());
+						}else{
+							officeSupplies= new OfficeSupplies();
+						}
+						officeSupplies.setBranchs(branchs);
+						officeSupplies.setPurType(Integer.valueOf(1));
+						officeSupplies.setRealname(employee.getName());
+						if (bean.getDepart() != null) {
+							officeSupplies.setDepart(employee.getDepart().getName());
+						}
+						officeSupplies.setGoodsname(bean.getGoodsname());
+						officeSupplies.setModel(bean.getModel());
+						officeSupplies.setNumbers(Integer.valueOf(bean.getNumbers()));
+						officeSupplies.setPriceMoney(new BigDecimal(bean.getPriceMoney()));
+						if (bean.getTaxMoney() != null) {
+							officeSupplies.setTaxMoney(new BigDecimal(bean.getTaxMoney()));
+						}
+						officeSupplies.setTotalMoney(new BigDecimal(bean.getTotalMoney()));
+						officeSupplies.setAuditp(Auditp.PENDING);
+						officeSupplies.setPurchase(Purchase.FAILED);
+						officeSupplies.setEmployee(employee);
+						officeSupplies.setApplyDT(bean.getApplyDT());
+						this.purchaseDAO.saveOfficeSupplies(officeSupplies);
+					}
+				}
+				return true;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean modElectEquipent(ElectEquipentBean bean, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+		if (employee != null) {
+				try {
+					if (bean.getId() != null && bean.getId().intValue() > 0){
+						ElectEquipent electEquipent=this.purchaseDAO.readElectEquipent(Integer.valueOf(bean.getId()));
+						if(electEquipent != null && electEquipent.getAuditp() == Auditp.PENDING){
+						electEquipent.setId(bean.getId());
+						electEquipent.setBranchs(branchs);
+						electEquipent.setPurType(Integer.valueOf(2));
+						electEquipent.setRealname(employee.getName());
+						if (bean.getDepart() != null) {
+							electEquipent.setDepart(employee.getDepart().getName());
+						}
+						electEquipent.setGoodsname(bean.getGoodsname());
+						electEquipent.setModel(bean.getModel());
+						electEquipent.setNumbers(Integer.valueOf(bean.getNumbers()));
+						electEquipent.setPlace(bean.getPlace());
+						electEquipent.setPriceMoney(new BigDecimal(bean.getPriceMoney()));
+						if (bean.getTaxMoney() != null) {
+							electEquipent.setTaxMoney(new BigDecimal(bean.getTaxMoney()));
+						}
+						electEquipent.setTotalMoney(new BigDecimal(bean.getTotalMoney()));
+						electEquipent.setUsername(bean.getUsername());
+						electEquipent.setApplyDT(bean.getApplyDT());
+						electEquipent.setAuditp(Auditp.PENDING);
+						electEquipent.setPurchase(Purchase.FAILED);
+						electEquipent.setEmployee(employee);
+						if(this.purchaseDAO.saveElectEquipent(electEquipent)){
+							return true;
+							}
+						}
+					}
+				} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean saveOfficeSupplies(OfficeSuppliesBean bean, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+		if (employee != null) {
+			try {
+					if (bean.getId() != null && bean.getId().intValue() > 0){
+						OfficeSupplies officeSupplies=this.purchaseDAO.readOfficeSupplies(Integer.valueOf(bean.getId()));
+						if (officeSupplies !=null && officeSupplies.getAuditp() == Auditp.PENDING) {
+							officeSupplies.setId(bean.getId());
+							officeSupplies.setBranchs(branchs);
+							officeSupplies.setPurType(Integer.valueOf(1));
+							officeSupplies.setRealname(employee.getName());
+							if (bean.getDepart() != null) {
+								officeSupplies.setDepart(employee.getDepart().getName());
+							}
+							officeSupplies.setGoodsname(bean.getGoodsname());
+							officeSupplies.setModel(bean.getModel());
+							officeSupplies.setNumbers(Integer.valueOf(bean.getNumbers()));
+							officeSupplies.setPriceMoney(new BigDecimal(bean.getPriceMoney()));
+							if (bean.getTaxMoney() != null) {
+								officeSupplies.setTaxMoney(new BigDecimal(bean.getTaxMoney()));
+							}
+							officeSupplies.setTotalMoney(new BigDecimal(bean.getTotalMoney()));
+							officeSupplies.setAuditp(Auditp.PENDING);
+							officeSupplies.setPurchase(Purchase.FAILED);
+							officeSupplies.setEmployee(employee);
+							officeSupplies.setApplyDT(bean.getApplyDT());
+							if(this.purchaseDAO.saveOfficeSupplies(officeSupplies)){
+								return true;
+							}
+						}
+					}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+
+}

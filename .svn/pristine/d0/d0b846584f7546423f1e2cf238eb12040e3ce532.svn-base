@@ -1,0 +1,719 @@
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts"%>
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts.Enabled"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>采购审核</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<jsp:include page="common.jsp"></jsp:include>
+<jsp:include page="bootstarp.jsp"></jsp:include>
+<jsp:include page="treeview.jsp"></jsp:include>
+<style>
+body {
+	height: 100%;
+	min-width: 200px;
+	overflow-x: hidden;
+	position: relative;
+}
+
+.mustred {
+	margin-left: 10px;
+	color: #ff0000;
+}
+
+.mains {
+	width: 100%;
+	min-width: 1000px;
+	overflow: hidden;
+	background-color: #fff;
+}
+
+.lefttree {
+	width: 15%;
+	margin-right: 15px;
+	height: 800px;
+	float: left;
+	overflow: scroll;
+}
+
+.rightbox {
+	width: 85%;
+	float: right;
+	overflow: auto;
+	margin-top: -800px;
+	position: relative;
+}
+
+.mustred {
+	margin-left: 10px;
+	color: #ff0000
+}
+
+.ok {
+	border: 1px solid #ddd;
+	text-align: center;
+	height: 38px;
+	line-height: 38px;
+	display: inline-block;
+	color: #fff;
+	background-color: #599eeb;
+	width: 90px;
+	border-radius: 5px;
+	margin-right: 20px;
+	cursor: pointer;
+	margin-top: 20px;
+}
+
+.control {
+	margin-left: -174px;
+}
+
+#apply_lo {
+	border: 1px solid #ddd;
+}
+
+#applies_look .table {
+	white-space: inherit;
+}
+
+#apply_lo tr {
+	border-bottom: 1px solid #ddd;
+	height: 44px;
+	line-height: 40px;
+	text-indent: 20px;
+}
+
+#qq {
+	margin-left: -20px;
+}
+
+.reject {
+	border: 1px solid #ddd;
+	text-align: center;
+	height: 38px;
+	line-height: 38px;
+	display: inline-block;
+	color: #fff;
+	width: 90px;
+	border-radius: 5px;
+	margin-right: 20px;
+	cursor: pointer;
+	margin-top: 20px;
+	background-color: #ccc1d9;
+}
+</style>
+<script>
+$(function () {
+		$(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+		
+       $(".control .deptpass").click(function() {
+			var $chuangkou = $("#deptpass");
+			if (grid.getSelectedRow().length > 0) {
+			    $.basewindow("是否确认部门审核通过?", $chuangkou, 380, 200);
+			    $(".basewindow").addClass("custom-scroll");
+		}else{
+			$.threesecond("请勾选中数据", 200, 100, 1000);
+		}
+	});
+	
+	$("#deptpass #ok").click(function(){
+           		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+	            var rejectMsg = {
+	                "id":id
+	            };
+	            $.ajax({
+	                type: "POST",
+	                url: "${pageContext.request.contextPath}/purchaseAudit/deptpass.do",
+	                data: JSON.stringify(rejectMsg),
+	                contentType: "application/json; charset=utf-8",
+	                cache: false
+	            }).done(function (data) {
+	                if (data.resultStatus == 200) {
+	                    $.threesecond("部门审核通过成功!", 200, 100, 1000);
+	                    grid.refreshPage();
+	                }
+	            }).error(function (jqXHR, textStatus, errorThrown) { });
+           });
+	$("#equipass #ok").click(function(){
+           		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+	            var rejectMsg = {
+	                "id":id
+	            };
+	            $.ajax({
+	                type: "POST",
+	                url: "${pageContext.request.contextPath}/purchaseAudit/equipass.do",
+	                data: JSON.stringify(rejectMsg),
+	                contentType: "application/json; charset=utf-8",
+	                cache: false
+	            }).done(function (data) {
+	                if (data.resultStatus == 200) {
+	                    $.threesecond("设备人员审核通过成功!", 200, 100, 1000);
+	                    grid.refreshPage();
+	                }
+	            }).error(function (jqXHR, textStatus, errorThrown) { });
+           });
+	$("#personpass #ok").click(function(){
+           		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+	            var rejectMsg = {
+	                "id":id
+	            };
+	            $.ajax({
+	                type: "POST",
+	                url: "${pageContext.request.contextPath}/purchaseAudit/personpass.do",
+	                data: JSON.stringify(rejectMsg),
+	                contentType: "application/json; charset=utf-8",
+	                cache: false
+	            }).done(function (data) {
+	                if (data.resultStatus == 200) {
+	                    $.threesecond("负责人审核通过成功!", 200, 100, 1000);
+	                    grid.refreshPage();
+	                }
+	            }).error(function (jqXHR, textStatus, errorThrown) { });
+           });
+	$("#headpass #ok").click(function(){
+           		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+	            var rejectMsg = {
+	                "id":id
+	            };
+	            $.ajax({
+	                type: "POST",
+	                url: "${pageContext.request.contextPath}/purchaseAudit/headpass.do",
+	                data: JSON.stringify(rejectMsg),
+	                contentType: "application/json; charset=utf-8",
+	                cache: false
+	            }).done(function (data) {
+	                if (data.resultStatus == 200) {
+	                    $.threesecond("总公司审核通过成功!", 200, 100, 1000);
+	                    grid.refreshPage();
+	                }
+	            }).error(function (jqXHR, textStatus, errorThrown) { });
+           });
+           
+           $("#deptpass #jujue").click(function(){
+		         $('body').append($("#deptpass"));
+				 $("#deptpass").hide();
+		         $(".basewindow").hide();
+		         $(".zhezhao-basewindow").hide(); 
+		    	 var $chuangkou=$("#rejectE"); 
+	    	     $.basewindow("是否确认审核拒绝?", $chuangkou, 320, 300); 
+	             $(".basewindow").addClass("custom-scroll");
+	    	});  
+		   
+		   $("#rejectE #okok").click(function(){
+	            var id = grid.getRowRecord(grid.getSelectedRow()).id;
+	            var rejectMsg = $("#rejectE #rejectMsg").val();
+	            var reject = {
+                "id":id,
+                "rejectMsg":rejectMsg
+            	};
+            $.ajax({
+                type: "POST",
+                url: "${pageContext.request.contextPath}/purchaseAudit/rejectEl.do",
+                data: JSON.stringify(reject),
+                contentType: "application/json; charset=utf-8",
+                cache: false
+            }).done(function (data) {
+                if (data.resultStatus == 200) {
+                    $.threesecond("审核已拒绝!", 200, 100, 1000);
+                    grid.refreshPage();
+                }
+            }).error(function (jqXHR, textStatus, errorThrown) { });
+           });
+        
+	$(".control .equipass").click(function () {
+           var $chuangkou = $("#equipass");
+			if (grid.getSelectedRow().length > 0) {
+			    $.basewindow("是否确认设备人员审核通过?", $chuangkou, 380, 200);
+			    $(".basewindow").addClass("custom-scroll");
+		}else{
+			$.threesecond("请勾选中数据", 200, 100, 1000);
+		}
+        });
+        
+	$(".control .personpass").click(function () {
+          var $chuangkou = $("#personpass");
+			if (grid.getSelectedRow().length > 0) {
+			    $.basewindow("是否确认负责人审核通过?", $chuangkou, 380, 200);
+			    $(".basewindow").addClass("custom-scroll");
+		}else{
+			$.threesecond("请勾选中数据", 200, 100, 1000);
+		}
+        });
+        
+	$(".control .headpass").click(function () {
+            var $chuangkou = $("#headpass");
+			if (grid.getSelectedRow().length > 0) {
+			    $.basewindow("是否确认总公司审核通过?", $chuangkou, 380, 200);
+			    $(".basewindow").addClass("custom-scroll");
+		}else{
+			$.threesecond("请勾选中数据", 200, 100, 1000);
+		}
+        });
+        
+	$(".control .start").click(function () {
+          if (grid.getSelectedRow().length > 0) {
+            var id = grid.getRowRecord(grid.getSelectedRow()).id;
+            	var rejectMsg = {
+	                "id":id
+	            };
+				if(id != ""){
+					$.yesorno("确认开始处理吗?",300,160,function(){
+						$.ajax({
+							type: "POST",
+	                    	url: "${pageContext.request.contextPath}/purchaseAudit/startEl.do",
+	                    	data: JSON.stringify(rejectMsg),
+			                contentType: "application/json; charset=utf-8",
+			                cache: false
+						}).done(function(data){
+							if(data.resultStatus == 200)
+								$.threesecond("开始处理成功", 200, 100, 1000);
+							 grid.refreshPage();
+						}).error(function(qs,status,error){});
+					},function(){});
+				}else{
+					$.threesecond("请勾选中数据", 200, 100, 1000);
+				}
+			}
+        });
+        
+        $(".control .end").click(function () {
+          if (grid.getSelectedRow().length > 0) {
+           var $chuangkou = $("#remark");
+            $.basewindow("是否确认完成处理?", $chuangkou, 300,320);
+			    $(".basewindow").addClass("custom-scroll");
+			    }else{
+			$.threesecond("请勾选中数据", 200, 100, 1000);
+		}
+        });
+        
+        $("#remark #ok").click(function(){
+           		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+           		var remarks = $("#remark #remarks").val();
+	            var rejectMsg = {
+	                "id":id,
+	                "remarks":remarks
+	            };
+	            $.ajax({
+	                type: "POST",
+	                url: "${pageContext.request.contextPath}/purchaseAudit/endEl.do",
+	                data: JSON.stringify(rejectMsg),
+	                contentType: "application/json; charset=utf-8",
+	                cache: false
+	            }).done(function (data) {
+	                if (data.resultStatus == 200) {
+	                    $.threesecond("完成处理!", 200, 100, 1000);
+	                    grid.refreshPage();
+	                }
+	            }).error(function (jqXHR, textStatus, errorThrown) { });
+           });
+        
+	$(".views").click(function() {
+ 			var $chuangkou = $("#purlook");
+			if (grid.getSelectedRow().length > 0) {
+				var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				 var editurl = "${pageContext.request.contextPath}/purchaseApplication/editPur.do";
+				$.ajax({
+					type : "get",
+					dataType : "json",
+					url : editurl,
+					data : "id=" + id,
+					show : "slide",
+					success : function(data) {
+						  var $data = data.data; 
+							$("#purlook #realname").text(data.realname);
+							$("#purlook #num").text(data.num);
+							$("#purlook #dept").text(data.depart);
+							$("#purlook #applyDT").text(data.applyDT);
+							$("#purlook #emodel").text(data.model);
+							$("#purlook #egoodsname").text(data.goodsname);
+							$("#purlook #epriceMoney").text(data.priceMoney);
+							$("#purlook #enumbers").text(data.numbers);
+							$("#purlook #etaxMoney").text(data.taxMoney);
+							$("#purlook #etotalMoney").text(data.totalMoney);
+					},
+					error : function(data) {
+					}
+				});
+				$.basewindow("详细资料", $chuangkou,540,320);
+				$chuangkou.css({
+					"display" : "block"
+				});
+				} else {
+					$.threesecond("请先选择", 200, 100, 1000);
+				}
+			});
+	
+	var grid = $.fn.bsgrid.init("searchTable", {
+    	url: "${pageContext.request.contextPath}/purchaseAudit/readPages.do?branchs=${branchs}",
+        pageSizeSelect: true,
+        pageSize: pageSize,
+        pagingToolbarAlign: "left",
+        displayBlankRows: false,
+         displayPagingToolbarOnlyMultiPages: true ,
+         extend: {
+			settings:{
+				supportGridEdit:true,
+				supportGridEditTriggerEvent:"",
+				gridEditConfigs:{
+					auditp:{
+						build:function(edit,value){
+							if(value== "审核中") 
+								return "<span style='color:#0074ac'>"+value+"</span>"
+							if(value== "待审核 ")
+								return "<span style='color:#e35d00'>"+value+"</span>"
+							if(value== "通过 ")
+								return "<span style='color:#cc9933'>"+value+"</span>"
+							if(value== "未通过 ")
+								return "<p><span style='color:#ccc1d9'>"+value+"</span></p><p><span >查看原因</span></p>"
+						}
+					},
+					purchase:{
+						build:function(edit,value){
+							if(value=="待采购")
+								return "<span style='color:#0074ac'>"+value+"</span>"
+							if(value=="采购中")
+								return "<span style='color:#e35d00'>"+value+"</span>"
+							if(value=="采购完成")
+								return "<span style='color:#ccc1d9'>"+value+"</span>"
+						}
+					}
+				}
+			}        	
+        } 
+    });
+    	
+    	var ids ="";
+	    this.tree = [];
+			$.getJSON("${pageContext.request.contextPath}/empAttendance/readTree.do?t="+new Date().toString(),function(data){
+				 $("#tree").treeview({
+				  data: data.data,
+				  levels: 5,
+				  expanded:false,
+				  selectedBackColor:"#f3f3f3",
+				  selectedColor:"#333",
+				  icon: "glyphicon glyphicon-stop",
+	  			  //selectedIcon: "glyphicon glyphicon-stop",
+				  onNodeSelected: function(event, data) {
+				    ids=data.id;
+				    var click_type;
+				 		//加载数据
+					var searchParames={
+							    "id": ids
+							}
+					grid.search(searchParames);
+				  }
+				});	 
+			});
+		
+		//快速搜索
+		$("#fast").change(function() {
+		    var fastArg = $("#fast").val();
+			var searchParames={
+			    "fastArg": fastArg,
+			    "id":ids
+			}
+			grid.search(searchParames);
+		})
+		
+		$("#searchTable").click(function() {
+			if (grid.getSelectedRow().length > 0) {
+				var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				var branchs = grid.getRowRecord(grid.getSelectedRow()).branchs;
+				var purType = grid.getRowRecord(grid.getSelectedRow()).purType;
+				var rejectMsg = {
+	                "id":id,
+	                "branchs":branchs,
+	                "purType":purType
+	            };
+				 $.ajax({
+					type: "POST",
+					url: "${pageContext.request.contextPath}/purchaseAudit/readBaseTabCommon.do",
+					data: JSON.stringify(rejectMsg),
+					contentType: "application/json; charset=utf-8",
+					cache: false
+				}).done(function (data) {
+					if(data.exData != null && data.exData.auditp == "PENDING"){
+					        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+					}else if(data.exData != null && data.exData.auditp == "PASSED"){
+					        if(data.exData != null && data.exData.purchase == "PENDING"){
+					        	$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+					        }else if(data.exData != null && data.exData.purchase == "UNKNOWN"){
+					        	$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+					        } else if(data.exData != null && data.exData.purchase == "PASSED"){
+					        	$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+					        } 
+					}else if(data.exData != null && data.exData.auditp == "NOTPASS"){
+							$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+					        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+					}else if(data.exData != null && data.exData.auditp == "UNKNOWN"){
+							if(data.exData.passType == "1"){
+								$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+							}else if(data.exData.passType == "2"){
+								$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+							}else if(data.exData.passType == "3"){
+								$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .start").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+							}else if(data.exData.passType == "4"){
+								$(".thistable .deptpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .equipass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .personpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .headpass").attr("disabled","true").addClass("tablecancel");
+						        $(".thistable .end").attr("disabled","true").addClass("tablecancel");
+							}
+					    }
+					$(".right-two a").each(function(){
+						var mid = "";
+						if(data.exData != null){
+							mid = data.exData.id;			
+						}
+						$(this).attr({"href":$(this).attr("href").substring(0,$(this).attr("href").indexOf("?"))+"?branchs=${branchs}&"+"&purType=${purType}"});		
+					});
+					}).error(function (jqXHR, textStatus, errorThrown) {}); 
+				} else {
+					$.threesecond("请先选择", 200, 100, 1000);
+				}	
+		});
+		
+		$.ajax({
+    		type: "POST",
+    		url: "${pageContext.request.contextPath}/platManager/readBaseTabCommon.do",
+    		data: "",
+   			cache: false
+   			}).done(function (data) {
+   			if(data.data.length > 0){
+   				$(data.data).each(function(index,value){
+	   				var $self = $(this);
+					var url = window.location.href;
+					if(url.indexOf("?") > 0){
+						url = url.substring(0,url.indexOf("?"));
+					}
+					$(".right-twohalf .rspan ul").append("<li><a href='${pageContext.request.contextPath}/purchaseAudit/show.do?branchs="+$self[0].opkey+"'>"+ $self[0].opName+"</a></li>")   				
+	   			});
+	   			$(".right-twohalf .regspan").show();
+   				$(".right-twohalf .rspan").show();
+   			}
+   		});
+        $(".right-twohalf .rspan>span").click(function(){
+			if (!$(".right-twohalf .rspan ul").is(":animated")) {
+				$(".right-twohalf .rspan ul").fadeToggle();
+	       	}
+	    });
+		
+});
+</script>
+</head>
+<body class="custom-scroll">
+	<div class="right-one fsize18 fweightbold clearFix">
+		<div class="fl">
+			<span class="refresh fl"></span> <span class="num fl">2</span>
+		</div>
+		<div class="fr">
+			<span class="rName fl"></span> <span class="username fl">${user.user.accounts}</span>
+			<span class="fl">, 欢迎来到<spring:message code="title" /></span> <a
+				href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+		</div>
+	</div>
+	<div class="right-twohalf clearFix">
+		<span>首页</span> <span>></span> <span>行政系统</span> <span>></span> <span
+			class="color99">采购审核</span> <span class="rejectMsg"
+			style="float:left;color:#e35d00;"></span>
+	</div>
+	<div class="clearFix right-twoRight">
+			<div class="fr">
+				<span class="regspan">查看分公司：</span>
+				<div class="rspan"><span>${branchsMsg}</span><ul></ul></div>
+				<div class="search">
+		    		<input id="fast" type="text" placeholder="姓名搜索">
+			    	<button type="button" id="seach" class="tableok">搜索</button>				
+				</div>
+			</div>
+		</div>
+	<jsp:include page="purchaseAuditCommon.jsp"></jsp:include>
+	<div class="rightPadd">
+		<div class="custom-scroll mains">
+			<div class="lefttree custom-scroll">
+				<table class="table" style="min-width: 20%;">
+					<tr><th align="center">部门导航</th></tr>
+					<tr><td id="tree" style="text-align:left;"></td></tr>
+				</table>
+			</div>
+			<div class="rightbox thistable custom-scroll">
+				<table id="searchTable" class="table tablelist">
+					<tr class="firsttr" >
+						<th w_index="id" w_align="center" width="1%;" w_hidden="true" type="checkbox">id</th>
+						<th w_index="branchs" w_align="center" width="1%;" w_hidden="true">branchs</th>
+						<th w_index="purType" w_align="center" width="1%;" w_hidden="true">purType</th>
+						<th w_check="true" w_index="billed" width="1%;"></th>
+						<th w_num="line" w_align="center" width="1%;">序号</th>
+						<th w_index="num" w_align="center" width="1%;">员工号</th>
+						<th w_index="realname" w_align="center" width="1%;">姓名</th>
+						<th w_index="depart" w_align="center" width="1%;">部门</th>
+						<th w_index="goodsname" w_align="center" width="1%;">申请物品名称</th>
+						<th w_index="model" w_align="center" width="1%;">型号</th>
+						<th w_index="priceMoney" w_align="center" width="1%;">单价</th>
+						<th w_index="numbers" w_align="center" width="1%;">数量</th>
+						<th w_index="totalMoney" w_align="center" width="1%;">总价</th>
+						<th w_index="taxMoney" w_align="center" width="1%;">税额</th>
+						<th w_index="applyDT" w_align="center" width="1%;">申请日期</th>
+						<th w_index="auditp" w_edit="auditp" w_align="center" width="1%;">审核状态</th>
+						<th w_index="purchase" w_edit="purchase" w_align="center"width="1%;">采购状态</th>
+						<th w_index="completeDT" w_align="center" width="1%;">采购日期</th>
+						<th w_index="remarks" w_align="center">备注</th>
+					</tr>
+				</table>
+				<div class="control">
+					<jsp:include page="attsCommon.jsp"></jsp:include>
+				</div>
+			</div>
+		</div>
+		<!-- 查看详细 -->
+		<div id="purlook" style="margin-left: 20px; margin-right: 20px; display:none;">
+			<table class="table2">
+				<tr>
+					<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+					<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">申请人姓名：</td>
+					<td><span id="realname" class="w200"></span></td>
+					<td style="text-align: right;" class="hei">员工号：</td>
+					<td><span id="num"></span></td>
+				</tr>
+				<tr>
+					<td style="text-align: right;" class="hei">部门：</td>
+					<td><span id="dept" class="w200"></span></td>
+					<td style="text-align: right;" class="hei">申请时间：</td>
+					<td><span id="applyDT" class="w200"></span></td>
+				</tr>
+				<tr>
+						<td style="text-align: right;" class="hei">物品名称：</td>
+						<td><span id="egoodsname" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">规格型号：</td>
+						<td><span id="emodel" class="w200"></span></td>
+					</tr>
+					<tr>
+						<td style="text-align: right;" class="hei">单价：</td>
+						<td><span id="epriceMoney" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">数量：</td>
+						<td><span id="enumbers" class="w200"></span></td>
+					</tr>
+					<tr>
+						<td style="text-align: right;" class="hei">税额：</td>
+						<td><span id="etaxMoney" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">总价：</td>
+						<td><span id="etotalMoney" class="w200"></span></td>
+					</tr>
+					<tr>
+					    <td style="text-align: right; display:none; ">id</td>
+	                    <td id="id" class="id" style="display:none; "></td>
+					</tr>
+			</table>
+			<p style="text-align:center">
+				<input class="cancel" type="reset" name="Input" value="关闭">
+			</p>
+		</div>
+		
+		<div id="applies_look" style="padding-left: 20px; padding-right: 20px; display:none;">
+		  	<table class="table" id="apply_lo">
+		  		<input type="hidden" id="id">
+		  	</table>
+		  	<p style="text-align:center;">
+		  		<input class="cancel" type="reset" name="Input" value="关闭">
+		  	</p>
+	    </div>
+		
+		<form id="deptpass"style="display:none;margin-left:20px;margin-right:20px;">
+			<p>
+				<input class="ok" id="ok" type="reset" value="确定">
+				<input class="reject" id="jujue" type="reset" value="拒绝">
+				<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+		<form id="equipass"style="display:none;margin-left:20px;margin-right:20px;">
+			<p>
+				<input class="ok" id="ok" type="reset" value="确定">
+				<input class="reject" id="jujue" type="reset" value="拒绝">
+				<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+		<form id="personpass"style="display:none;margin-left:20px;margin-right:20px;">
+			<p>
+				<input class="ok" id="ok" type="reset" value="确定">
+				<input class="reject" id="jujue" type="reset" value="拒绝">
+				<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+		<form id="headpass"style="display:none;margin-left:20px;margin-right:20px;">
+			<p>
+				<input class="ok" id="ok" type="reset" value="确定">
+				<input class="reject" id="jujue" type="reset" value="拒绝">
+				<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+		
+		<form  id="rejectE" style="display:none;margin-left:20px;margin-right:20px;">
+			<p>拒绝申请原因</p>
+			<input type="hidden" name="id" id="id">
+			<p><textarea name="rejectMsg" id="rejectMsg" type="text" placeholder="20字以内"  style="width:250px; height:100px;"></textarea></p>
+			<p class="bCenter">
+				<input class="ok" id="okok" type="button" value="确定拒绝">&nbsp;&nbsp;&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+		<form  id="remark" style="display:none;margin-left:20px;margin-right:20px;">
+			<p>备注</p>
+			<input type="hidden" name="id" id="id">
+			<p><textarea name="remarks" id="remarks" type="text" placeholder="20字以内"  style="width:250px; height:100px;"></textarea></p>
+			<p class="bCenter">
+				<input class="ok" id="ok" type="button" value="确定">&nbsp;&nbsp;&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="取消">
+			</p>
+		</form>
+	</div>
+</body>
+</html>

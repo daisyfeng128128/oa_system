@@ -1,0 +1,92 @@
+package com.baofeng.oa.dao;
+
+import java.util.Date;
+import java.util.List;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.oa.entity.Assets;
+import com.baofeng.utils.DetachedCriteriaUtil;
+import com.baofeng.utils.IBaseDAO;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+@Repository("assetsDAO")
+public class AssetsDAO {
+	
+	@Autowired
+	private IBaseDAO baseDAO;
+
+	public IBaseDAO getBaseDAO() {
+		return baseDAO;
+	}
+
+	public void setBaseDAO(IBaseDAO baseDAO) {
+		this.baseDAO = baseDAO;
+	}
+
+	public NPageResult<?> readPages(int pageSize, int curPage, String sortName,String sortOrder, SearchFilter searchFilter) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(Assets.class);
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			detachedCriteria.addOrder(Order.asc("createDT"));
+			DetachedCriteriaUtil.addSearchFilter(detachedCriteria, searchFilter);
+			return this.baseDAO.NfindByPages(detachedCriteria, pageSize, curPage);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return null;
+	}
+
+
+
+	@SuppressWarnings("unchecked")
+	public Assets readAllassetsByDate(Integer branchs, Date $date1, Date $date2) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(Assets.class);
+			detachedCriteria.add(Restrictions.eq("branchs", branchs));
+			detachedCriteria.add(Restrictions.between("createDT", $date1, $date2));
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			List<Assets> list = (List<Assets>) this.baseDAO.findAllByCriteria(detachedCriteria);
+			if (list != null && list.size() > 0) {
+				return list.get(0);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		return null;
+	}
+
+	public boolean addAssets(Assets assets) {
+		try {
+			if (assets != null && assets.getId() != null && assets.getId().intValue() > 0) {
+				this.baseDAO.update(assets);
+			} else {
+				this.baseDAO.save(assets);
+			}
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public Assets readAssets(Integer id) {
+		try {
+			Assets assets = (Assets) this.baseDAO.get(Assets.class, id);
+			return assets;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	
+
+}

@@ -1,0 +1,316 @@
+package com.baofeng.oa.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.DisciplinaryBean;
+import com.baofeng.oa.dao.DisciplinaryDAO;
+import com.baofeng.oa.entity.BaseEnums.DepPass;
+import com.baofeng.oa.entity.BaseEnums.Punishment;
+import com.baofeng.oa.entity.Department;
+import com.baofeng.oa.entity.Disciplinary;
+import com.baofeng.oa.entity.Positions;
+import com.baofeng.oa.service.IDepartmentService;
+import com.baofeng.oa.service.IDisciplinaryService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.oa.service.IPositionsService;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+@Service("disciplinaryService")
+public class DisciplinaryServiceImpl implements IDisciplinaryService {
+	@Autowired
+	private DisciplinaryDAO disciplinaryDAO;
+	@Autowired
+	private IDepartmentService departmentService;
+	@Autowired
+	private IEmployeeService employeeService;
+	@Autowired
+	private IPositionsService positionsService;
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public NPageResult<?> readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer type, String fastArg, Integer id,SearchFilter searchFilter) {
+		NPageResult rows = this.disciplinaryDAO.readPages(pageSize, curPage, sortName, sortOrder, type,fastArg,id,searchFilter);
+		if (rows !=null  && rows.getData().size() > 0) {
+			List<DisciplinaryBean> beanList = new ArrayList<DisciplinaryBean>();
+			for (Object o : rows.getData()) {
+				Disciplinary disciplinary = (Disciplinary) o;
+				DisciplinaryBean bean = new DisciplinaryBean();
+				bean.setId(disciplinary.getId());
+				bean.setNum(disciplinary.getNum());
+				bean.setName(disciplinary.getName());
+				bean.setAliasname(disciplinary.getAliasname());
+				bean.setApplyDT(disciplinary.getApplyDT());
+				bean.setPosId(disciplinary.getPosition().getId());
+				bean.setPosName(disciplinary.getPosition().getName());
+				bean.setDepId(disciplinary.getDepart().getId());
+				bean.setDepName(disciplinary.getDepart().getName());
+				if ((disciplinary.getPunishmentItems()).equals("1")) {
+					bean.setPunishmentItems("所有事项");
+				}else if((disciplinary.getPunishmentItems()).equals("2")){
+					bean.setPunishmentItems("迟到/旷工");
+				}else if((disciplinary.getPunishmentItems()).equals("3")){
+					bean.setPunishmentItems("抽烟/吃饭");
+				}else if((disciplinary.getPunishmentItems()).equals("4")){
+					bean.setPunishmentItems("卫生");
+				}else if((disciplinary.getPunishmentItems()).equals("5")){
+					bean.setPunishmentItems("未关设备");
+				}else if((disciplinary.getPunishmentItems()).equals("6")){
+					bean.setPunishmentItems("其他");
+				}
+				bean.setDisciplinary(disciplinary.getDisciplinary());
+				bean.setFname(disciplinary.getFname());
+				bean.setPunishRemarks(disciplinary.getPunishRemarks());
+				bean.setDepPass(disciplinary.getDepPass()==DepPass.UNKNOWN ? "处理中" : (disciplinary.getDepPass() == DepPass.PASSED ? "通过" : "未通过"));
+				bean.setPayee(disciplinary.getPayee());
+				bean.setPayPerson(disciplinary.getPayPerson());
+				bean.setPunishment(disciplinary.getPunishment()== Punishment.UNKNOWN ? "未交" :(disciplinary.getPunishment() == Punishment.PASSED ? "已交" : ""));
+				bean.setPunishMoney(disciplinary.getPunishMoney());
+				bean.setCompleteDT(disciplinary.getCompleteDT());
+				if (disciplinary.getPunishmentType() != null) {
+					if ((disciplinary.getPunishmentType()).equals("1")) {
+						bean.setPunishmentType("工资扣除");
+					}else if ((disciplinary.getPunishmentType()).equals("2")){
+						bean.setPunishmentType("现金");
+					}
+				}
+				bean.setPayRemarks(disciplinary.getPayRemarks());
+				beanList.add(bean);
+				}
+				rows.setData(beanList);
+			}
+		return rows;
+	}
+
+	@Override
+	public boolean saveDisciplinary(DisciplinaryBean bean, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		Disciplinary disciplinary = null;
+		try {
+			if (bean.getId() != null && bean.getId().intValue() > 0) {
+				disciplinary  = this.disciplinaryDAO.readDisciplinaryById(bean.getId());
+			}else{
+				disciplinary = new Disciplinary();
+			}
+			disciplinary.setName(bean.getName());
+			disciplinary.setAliasname(bean.getAliasname());
+			disciplinary.setBranchs(branchs);
+			disciplinary.setNum(bean.getNum());
+			if (bean.getDepId() != null) {
+				Department sup = this.departmentService.readDepartment(Integer.valueOf(bean.getDepId()));
+				disciplinary.setDepart(sup);
+			}
+			if (bean.getPosId() != null) {
+				Positions posi = this.positionsService.readPositions(Integer.valueOf(bean.getPosId()));
+				disciplinary.setPosition(posi);
+			}
+			disciplinary.setApplyDT(bean.getApplyDT());
+			disciplinary.setDisciplinary(Float.valueOf(bean.getDisciplinary()));
+			disciplinary.setFname(bean.getFname());
+			disciplinary.setPunishmentItems(bean.getPunishmentItems());
+			disciplinary.setPunishRemarks(bean.getPunishRemarks());
+			disciplinary.setDepPass(DepPass.UNKNOWN);
+			disciplinary.setPunishment(Punishment.UNKNOWN);
+			disciplinary.setPunishmentType("1");
+			if (this.disciplinaryDAO.saveDisciplinary(disciplinary)) {
+				return true;
+			}
+			} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	@Override
+	public DisciplinaryBean readDisciplinaryBean(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			Disciplinary disciplinary = this.disciplinaryDAO.readDisciplinaryById(id);
+			if (disciplinary != null) {
+				DisciplinaryBean bean = new DisciplinaryBean();
+				bean.setId(disciplinary.getId());
+				bean.setName(disciplinary.getName());
+				bean.setNum(disciplinary.getNum());
+				bean.setAliasname(disciplinary.getAliasname());
+				bean.setDepId(disciplinary.getDepart().getId());
+				bean.setDepName(disciplinary.getDepart().getName());
+				bean.setPosId(disciplinary.getPosition().getId());
+				bean.setPosName(disciplinary.getPosition().getName());
+				bean.setApplyDT(disciplinary.getApplyDT());
+				bean.setDisciplinary(disciplinary.getDisciplinary());
+				bean.setFname(disciplinary.getFname());
+				bean.setPunishmentItems(disciplinary.getPunishmentItems());
+				bean.setPunishRemarks(disciplinary.getPunishRemarks());
+				return bean;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean delete(List<String> list, RoleUsers users,HttpServletRequest request) {
+		for (String id : list) {
+			Disciplinary disciplinary = this.disciplinaryDAO.readDisciplinaryById(Integer.valueOf(id));
+			if (disciplinary != null) {
+				disciplinary.setStatus(EntityStatus.DELETED);
+				this.disciplinaryDAO.saveDisciplinary(disciplinary);
+				}
+			return true;
+			}
+		return false;
+	}
+
+	@Override
+	public boolean updatedisciplinary(List<String> list, RoleUsers users,HttpServletRequest request) {
+		for (String id : list) {
+			Disciplinary disciplinary = this.disciplinaryDAO.readDisciplinaryById(Integer.valueOf(id));
+			if (disciplinary != null) {
+				disciplinary.setDepPass(DepPass.PASSED);
+				disciplinary.setPunishment(Punishment.UNKNOWN);
+				this.disciplinaryDAO.saveDisciplinary(disciplinary);
+				}
+			return true;
+			}
+		return false;
+	}
+
+	@Override
+	public boolean updateReject(DisciplinaryBean bean, RoleUsers users,HttpServletRequest request) {
+			Disciplinary disciplinary = this.disciplinaryDAO.readDisciplinaryById(bean.getId());
+			if (disciplinary != null) {
+				disciplinary.setDepPass(DepPass.NOTPASS);
+				disciplinary.setRejecrMessage(bean.getRejecrMessage());
+				if (this.disciplinaryDAO.saveDisciplinary(disciplinary)) {
+					return true;
+					}
+				}
+		return false;
+	}
+
+	@Override
+	public boolean saveDisc(DisciplinaryBean bean, RoleUsers users,Integer branchs, HttpServletRequest request) {
+		if (bean.getId1() != null) {
+			Disciplinary disciplinary  = this.disciplinaryDAO.readDisciplinaryById(Integer.valueOf(bean.getId1()));
+			if (disciplinary != null) {
+				disciplinary.setPunishment(Punishment.PASSED);
+				disciplinary.setPunishmentType(bean.getPunishmentType());
+				disciplinary.setPunishMoney(bean.getPunishMoney());
+				disciplinary.setPayPerson(bean.getPayPerson());
+				disciplinary.setPayee(bean.getPayee());
+				disciplinary.setCompleteDT(bean.getCompleteDT());
+				disciplinary.setPayRemarks(bean.getPayRemarks());
+				if (this.disciplinaryDAO.saveDisciplinary(disciplinary)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public List<Disciplinary> readAllDisciplinary(SearchFilter searchFilter) {
+		return this.disciplinaryDAO.readAllDisciplinary(searchFilter);
+	}
+
+	@Override
+	public HSSFWorkbook export(List<Disciplinary> listOn) {
+		String[] excelHeader = {"处罚人姓名", "艺名", "员工号", "部门", "职位", "处罚事项", "处罚金额", "处罚时间", "制单人", "罚单备注", "部门确认", 
+								"罚款缴纳状态", "交纳形式","实际缴纳/扣除金额","交纳时间","交纳人","收款人","交款备注"};
+		HSSFWorkbook wb = new HSSFWorkbook();
+		HSSFSheet sheet1 = wb.createSheet("违纪处理");
+		HSSFRow row1 = sheet1.createRow((int) 0);
+		HSSFCellStyle style = wb.createCellStyle();
+		style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+		style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+		HSSFFont font = wb.createFont();
+		font.setFontName("黑体");
+		font.setFontHeightInPoints((short) 12);
+		style.setFont(font);
+		for (int i = 0; i < excelHeader.length; i++) {
+			HSSFCell cell = row1.createCell(i);
+			cell.setCellValue(excelHeader[i]);
+			cell.setCellStyle(style);
+			sheet1.autoSizeColumn(i);
+			sheet1.setColumnWidth(i, 32 * 150);
+		}
+		if (listOn != null && listOn.size() > 0) {
+			for (int i = 0; i < listOn.size(); i++) {
+				row1 = sheet1.createRow(i + 1);
+				row1.setRowStyle(style);
+				Disciplinary disciplinary = listOn.get(i);
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				row1.createCell(0).setCellValue(disciplinary.getName());
+				row1.createCell(1).setCellValue(disciplinary.getAliasname());
+				row1.createCell(2).setCellValue(String.format("%04d", disciplinary.getNum()));
+				row1.createCell(3).setCellValue(disciplinary.getDepart().getName());
+				row1.createCell(4).setCellValue(disciplinary.getPosition().getName());
+				row1.createCell(5).setCellValue(disciplinary.getPunishmentItems());
+				if ((disciplinary.getPunishmentItems()).equals("1")) {
+					row1.createCell(5).setCellValue("所有事项");
+				}else if((disciplinary.getPunishmentItems()).equals("2")){
+					row1.createCell(5).setCellValue("迟到/旷工");
+				}else if((disciplinary.getPunishmentItems()).equals("3")){
+					row1.createCell(5).setCellValue("抽烟/吃饭");
+				}else if((disciplinary.getPunishmentItems()).equals("4")){
+					row1.createCell(5).setCellValue("卫生");
+				}else if((disciplinary.getPunishmentItems()).equals("5")){
+					row1.createCell(5).setCellValue("未关设备");
+				}else if((disciplinary.getPunishmentItems()).equals("6")){
+					row1.createCell(5).setCellValue("其他");
+				}
+				row1.createCell(6).setCellValue(disciplinary.getDisciplinary() != null ? disciplinary.getDisciplinary().toString() : "0.0");
+				row1.createCell(7).setCellValue(sdf.format(disciplinary.getApplyDT()));
+				row1.createCell(8).setCellValue(disciplinary.getFname());
+				if (disciplinary.getPunishRemarks() != null) {
+					row1.createCell(9).setCellValue(disciplinary.getPunishRemarks());
+				}
+				row1.createCell(10).setCellValue(disciplinary.getDepPass()==DepPass.UNKNOWN ? "处理中" : (disciplinary.getDepPass() == DepPass.PASSED ? "通过" : ""));
+				row1.createCell(11).setCellValue(disciplinary.getPunishment()== Punishment.UNKNOWN ? "未交" :(disciplinary.getPunishment() == Punishment.PASSED ? "已交" : ""));
+				
+				row1.createCell(12).setCellValue(disciplinary.getPunishmentType());
+				if (disciplinary.getPunishmentType() != null) {
+					if ((disciplinary.getPunishmentType()).equals("1")) {
+						row1.createCell(12).setCellValue("工资扣除");
+					}else if ((disciplinary.getPunishmentType()).equals("2")){
+						row1.createCell(12).setCellValue("现金");
+					}
+				}
+				row1.createCell(13).setCellValue(disciplinary.getPunishMoney() != null ? disciplinary.getPunishMoney().toString() : "0.0");
+				if (disciplinary.getCompleteDT() != null) {
+					row1.createCell(14).setCellValue(sdf.format(disciplinary.getCompleteDT()));
+				}
+				row1.createCell(15).setCellValue(disciplinary.getPayPerson());
+				row1.createCell(16).setCellValue(disciplinary.getPayee());
+				if (disciplinary.getPayRemarks() != null) {
+					row1.createCell(17).setCellValue(disciplinary.getPayRemarks());
+				}
+			}
+		}
+		return wb;
+	}
+
+	@Override
+	public Disciplinary readDisciplinary(Integer id) {
+		if (id != null && id.intValue() > 0) {
+			return this.disciplinaryDAO.readDisciplinary(id);
+		}
+		return null;
+	}
+	
+
+
+	
+}

@@ -1,0 +1,903 @@
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts"%>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>线下艺人</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<jsp:include page="common.jsp"></jsp:include>
+<jsp:include page="bootstarp.jsp"></jsp:include>
+<style>
+a{font-size:14px;color:#0099cc;text-decoration:none;}a:hover{font-size:14px;color:#cc9966;text-decoration:underline;}.style a{text-decoration:underline;}
+body {
+    height: 100%;
+    min-width: 200px;
+    overflow-x: hidden;
+    position: relative; 
+}
+.yirentable tr{
+height:30px;
+line-height:30px;
+}
+.yirentable tr:hover{	
+background-color:#ddd;
+}
+.yirentable .firsttr:hover{
+background-color:#fff;
+}
+.yirentable .selected{
+background-color:#ddd;
+}
+ 
+.control{
+	margin-left:-174px; 
+}
+.control .regspan {
+		float:right;
+		font-family: 'Microsoft YaHei';
+		margin-right: 130px;
+		font-weight: normal;
+		margin-top: 3px;
+		display: none;
+	}
+	
+	.control .rspan {
+		cursor: pointer;
+		float:right;
+		height: 27px;
+		margin-right:-190px;
+		margin-top: 8px;
+		width: 100px;
+		border: 1px solid #ddd;
+		display: none;
+	}
+	.control .rspan>span {
+		padding: inherit;
+		display: block;
+		color: black;
+		font-weight: normal;
+		background-color: transparent;
+		cursor: pointer;
+		margin-top: -2px;
+		width: 100px;
+		height: 30px;
+		line-height: 30px;
+		text-align: center;
+		border: 0px solid #ddd;
+	}
+	
+	.control .rspan ul {
+		margin-left: -1px;
+		display: none;
+		position: fixed;
+	}
+
+	.control .rspan li {
+		background-color: #fff;
+		cursor: pointer;
+		margin-top: -1px;
+		width: 100px;
+		height: 30px;
+		line-height: 30px;
+		text-align: center;
+		border: 1px solid #ddd;
+		font-weight: normal;
+	}
+	.control .rspan li a{
+		color:black;
+		text-decoration: none;
+	}
+	#basicSalary{
+		margin-left:10px; 
+	}
+</style>
+<script>
+$(function () {
+		$(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+		
+       //加载数据
+       $(".right-onehalf span").click(function(){
+    	   var $self=$(this);
+    	   if(!$self.hasClass("spanchange")){
+    		   $self.siblings("span").removeClass("spanchange");
+    		   $self.addClass("spanchange");   
+    		   grid.search(searchParames);
+    		   $("#actoresForm select option").remove();
+    	   }
+       })
+       var grid = $.fn.bsgrid.init("searchTable", {
+    		url: "${pageContext.request.contextPath}/actoresOnline/readPagesActoresOnline.do?branchs=${branchs}&genre=OFFLINE&toUrl=${toUrl}",
+    		pageSizeSelect: true, 
+    		pagingToolbarAlign: "left" ,
+    		displayBlankRows: false,
+    		pageSize:pageSize,
+            displayPagingToolbarOnlyMultiPages: true,
+            extend: {
+                settings: {
+                    supportGridEdit:true,
+                    supportGridEditTriggerEvent: "",
+                    gridEditConfigs: {
+                    	linkUrl: {
+                            build: function (edit, value) {
+                                if(value != "#"){
+                                    return  '<a class="dottwo pntotalSocial" class="style"   style="width:100px;" href="'+ value +'" target="view_window"  >查看视频</a>';
+                                }else{
+                                    return '<span style="color:#666666">查看视频<span>';
+                                }
+                            } 
+                        }
+                    } 
+                }
+            }
+
+    	});
+	    
+       $(".yirentable").delegate("tr:not('.firsttr')", "click", function() {
+           var $self = $(this);
+           if ($self.hasClass("selected")) {
+           } else {
+               $self.siblings("tr").removeClass("selected");
+               $self.addClass("selected");
+           }
+       });
+	    
+  		//高级搜索
+		$(".right-twoRight .searchAll").click(function() {
+			click_type = 11;
+			$("#name").removeAttr("readonly");
+			$("#namepy").removeAttr("readonly");
+			$("#genrer").removeAttr("disabled");
+			$("#basicSalary").next("span").remove();
+			var $chuangkou = $("#sousuo");
+			$.basewindow("高级搜索", $chuangkou, 666, 264);
+			$(".basewindow").addClass("custom-scroll");
+			$chuangkou.find(".ok").attr({
+				"disabled" : "disabled"
+			}).css({
+				"cursor" : "not-allowed"
+			})//初始确认建不能点击所以修改不需要这段 //改动6！！！
+		})
+	//搜索
+	$("#actoresForm .next").click(function(){
+		var $self=$(this);
+		var data={
+			name:$self.prev("input").val(),
+			loadTable:"false",
+			seachEmp: "true",     //线上呢?
+			seachAct : "true" 
+		}
+		$.ajax({
+	        type: "POST",
+	        url: "${pageContext.request.contextPath}/user/search.do",
+	        cache: false,
+	        data: JSON.stringify(data),  
+	        contentType: 'application/json; charset=utf-8',
+	    }).done(function (data) {
+	    	$(".yirentable tr").not(".firsttr").remove()
+	    	$(data).each(function(index){
+	        	var $self=$(this)[0];
+	        if(index==0){
+	        	$(".yirentable").append("<tr class='selected'><td hidden>"+$self.id+"</td><td hidden>"+$self.loadTable+"</td><td>"+$self.num+"</td><td>"+$self.name+"</td><td>"+$self.aliasname+"</td></tr>")   	
+	        }
+	        else{
+	        	$(".yirentable").append("<tr><td hidden>"+$self.id+"</td><td hidden>"+$self.loadTable+"</td><td class='num'>"+$self.num+"</td><td>"+$self.name+"</td><td>"+$self.aliasname+"</td></tr>") 
+	        }
+	        });
+	    }).error(function (jqXHR, textStatus, errorThrown){});
+	});
+
+	  //新增
+   $(".control .add").click(function(){
+    	var $chuangkou=$("#actoresForm");
+    	$(".yirentable tr").not(".firsttr").remove();
+        $.basewindow("新建艺人",$chuangkou,500,400); 
+        $(".basewindow").addClass("custom-scroll");
+    });
+    $("#actoresForm .next2").click(function(){
+	    var $self=$(this);
+	    $("#realname").removeAttr("disabled");
+		$("#aliasname").removeAttr("disabled");
+		$("#phone").removeAttr("disabled");
+		$("#sex").removeAttr("disabled");
+		$("#genre").removeAttr("disabled");
+		$("#settl").removeAttr("disabled");
+		$("#entryTime").datebox({disabled:false});
+		$("#beLiveTime").datebox({disabled:false});
+		$("#probation").removeAttr("disabled")
+		$("#probationSalary").removeAttr("disabled")
+		$("#minimumGuarantee").removeAttr("disabled");
+		$("#basicSalary").removeAttr("disabled");
+		$("#signed").removeAttr("disabled");
+		$("#idcard").removeAttr("disabled");
+		$("#address").removeAttr("disabled");
+		$("#pushMoney").removeAttr("disabled");
+							
+		var id=$(".yirentable .selected td:first").text();
+		var num=$(".yirentable .selected td").eq(2).text();
+		var loadTable =$(".yirentable .selected td").eq(1).text()
+		var $yes=function(){
+	  		$("#sex").removeAttr("disabled");
+			$("#settl").removeAttr("disabled");
+			$("#genre").removeAttr("disabled");
+			$("#signed").removeAttr("disabled");
+	    };
+		
+		if(id == null || id == ""){ 
+           	$.threetop("请选择艺人!"); 
+		}else{
+			var editurl = "${pageContext.request.contextPath}/actoresOnline/empEdit.do";
+			$.ajax({
+		    	type: "get",
+		        dataType: "json",
+		        url: editurl,
+		        data: "id="+id+"&loadTable="+loadTable+"&num="+num,
+		        show:"slide",
+		        success: function(data){
+		        	if(data.resultStatus == 200){
+		        		var $data = data.data;
+						if($data.loadTable == 1){
+							$("#actoresForm").appendTo($("body")).hide();
+							$.basewindow("新增艺人管理","#actoresSaveForm",835,390,$yes);
+							$("#actoresSaveForm #sex").val($data.sex);
+							if($("#actoresSaveForm #sex").val()=="女"){
+							 	$("#actoresSaveForm .settlCheck").prev("select").val("SINGLEPLATFORM").selected;
+							}else{
+							    $("#actoresSaveForm .settlCheck").prev("select").val("SINGLEPLATFORM").selected;
+							}
+							$("#settl").attr({"disabled":"disabled"});
+							$("#actoresSaveForm #empid").val($data.id);
+							$("#actoresSaveForm #loadTable").val(loadTable); 
+			                $("#actoresSaveForm #aliasname").val($data.aliasname); 
+			                $("#actoresSaveForm #realname").val($data.realname); 
+			                $("#actoresSaveForm #phone").val($data.phone); 
+							$("#actoresSaveForm #qq").val($data.qq);
+			                $("#actoresSaveForm #idcard").val($data.idcard); 
+			                $("#actoresSaveForm #address").val($data.liveAdress); 
+			                $("#actoresSaveForm #basicSalary").numberbox("setValue",$data.basicSalary); 
+				            $("#actoresSaveForm #probationSalary").numberbox("setValue",$data.probationSalary);
+							
+							$("#actoresSaveForm #realname").attr({"disabled":"disabled"});
+							$("#actoresSaveForm #aliasname").attr({"disabled":"disabled"});
+						}else if($data.loadTable == 2){
+							/* $("#actoresForm").appendTo($("body")).hide();
+							$.basewindow("新增艺人管理","#actoresSaveForm",835,390,$yes); 
+							if($("#actoresSaveForm #sex").val()=="WOMAN"){
+							 	$("#actoresSaveForm .settlCheck").prev("select").val("SINGLEPLATFORM").selected
+							}else{
+							    $("#actoresSaveForm .settlCheck").prev("select").val("SINGLEPLATFORM").selected
+							}
+							$("#actoresSaveForm #empid").val($data.id);
+							$("#actoresSaveForm #loadTable").val(loadTable);  
+				            $("#actoresSaveForm #realname").val($data.realname);
+					        $("#actoresSaveForm #aliasname").val($data.aliasname);
+				            $("#actoresSaveForm #phone").val($data.phone);
+							$("#actoresSaveForm #qq").val($data.qq);
+				            $("#actoresSaveForm #genre").val($data.genre);
+				            $("#actoresSaveForm #settl").val($data.settl);
+				            $("#actoresSaveForm #entryTime").datebox("setValue", $data.entryTime);
+				            $("#actoresSaveForm #probation").val($data.probation);
+				            $("#actoresSaveForm #probationSalary").numberbox("setValue",$data.probationSalary);
+				            $("#actoresSaveForm #minimumGuarantee").numberbox("setValue",$data.minimumGuarantee);
+				            $("#actoresSaveForm #basicSalary").numberbox("setValue",$data.basicSalary);
+				            $("#actoresSaveForm #pushMoney").numberbox("setValue",$data.pushMoney);
+				            $("#actoresSaveForm #signed").val($data.signed);
+				            $("#actoresSaveForm #idcard").val($data.idcard);
+					        $("#actoresSaveForm #address").val($data.address);
+							$("#actoresSaveForm #realname").attr({"disabled":"disabled"}); */
+						}
+		        	}else if(data.resultStatus == 101){
+		          		$.threetop("当前用户已存在!");
+		          	}
+			    }, error : function(data){}
+			});
+		}
+		$("#actoresForm .selected").removeClass("selected");
+	});
+    
+    
+    //修改
+    $(".control .mid").click(function(){
+    	var $chuangkou=$("#actoresSaveForm");
+    	var loadTable =0;
+    	$("#actoresSaveForm #loadTable").val(loadTable); 
+		if(grid.getSelectedRow().length>0){
+    		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+            var editurl = "${pageContext.request.contextPath}/actoresOnline/editActores.do";
+    		$.ajax({
+	          type: "get",
+	          dataType: "json",
+	          url: editurl,
+	          data: "id="+id,
+	          show:"slide",
+	          success: function(data){ 
+		        var $data = data.data;
+		        $.basewindow("修改艺人管理",$chuangkou,835,390);
+		        $("#actoresSaveForm #id").val($data.id);   
+            	
+				 if($data.sex =="女"){
+                      $("#sex").val("WOMAN").selected;
+                 }else if($data.sex =="男"){
+                     $("#sex").val("MAN").selected;
+                 }
+				
+				$("#actoresSaveForm #realname").val($data.realname);
+				$("#actoresSaveForm #aliasname").val($data.aliasname);
+				$("#actoresSaveForm #phone").val($data.phone);
+				$("#actoresSaveForm #qq").val($data.qq); 
+				$("#actoresSaveForm #probationSalary").numberbox("setValue",$data.probationSalary);
+				$("#actoresSaveForm #basicSalary").numberbox("setValue",$data.basicSalary);
+				$("#actoresSaveForm #pushMoney").numberbox("setValue",$data.pushMoney);
+			 
+				$("#actoresSaveForm #empid").val($data.number);
+				$("#actoresSaveForm #idcard").val($data.idcard);
+				$("#actoresSaveForm #address").val($data.address);
+				
+				$("#actoresSaveForm #realname").attr({"disabled":"disabled"});
+				$("#actoresSaveForm #aliasname").attr({"disabled":"disabled"});
+				$("#actoresSaveForm #pushMoney").attr({"disabled":"disabled"});
+				$("#actoresSaveForm #basicSalary").attr({"disabled":"disabled"});
+				$("#actoresSaveForm #probationSalary").attr({"disabled":"disabled"});
+		   	  }, error : function(data){}
+			});
+    	}else{
+    		$.threesecond("请先选择", 200, 100, 1000);
+    	}
+    });
+    
+      //离职
+    $(".control .leave").click(function () {
+    	if(grid.getSelectedRow().length>0){ 
+	    	 var $chuangkou=$("#leaveForm"); 
+    	     $.basewindow("离职原因:",$chuangkou,280, 300, function () {
+                    var id = grid.getRowRecord(grid.getSelectedRow()).id; 
+                	$("#leaveForm #id").val(id);
+                	$("#leaveForm #type").val(2);
+              		$("#leaveForm #t").val("ONLINE");
+               }, function () {
+                   $.threesecond("看来还是手下留情了!", 200, 100, 1000);
+               }); 
+    	}
+        else{
+        	$.threesecond("请先选择", 200, 100, 1000);
+        }
+    });  
+    
+    //删除
+    $(".control .del").click(function () {
+        var $chuangkou=$("#actoresSaveForm");
+    	if(grid.getSelectedRow().length>0){
+    	     $.yesorno("是否删除？", 300, 160, function () {
+    	      	var platId =  $(".right-onehalf .selected").attr("value");
+    	       	var id = grid.getRowRecord(grid.getSelectedRow()).id;
+                var delUrl = "${pageContext.request.contextPath}/actoresOnline/delete.do?t="+new Date().getTime();
+                    //后台删除
+                $.ajax({
+                	type: "get",
+				    dataType: "json",
+				    url: delUrl,
+				    data: "id="+id+"&platId="+platId,//要发送的数据
+				    success: function(data){
+				    	if("success" == data.resultMessage){
+				        	$(".table .selected").remove();
+				        }
+				    },error : function(data){}
+                });
+         	}, function () {
+            	$.threesecond("看来还是手下留情了!", 200, 100, 1000);
+            });
+    	}else{
+        	$.threesecond("请先选择", 200, 100, 1000);
+        }
+    });
+	 $("#actoresSaveForm .okok").click(function () {
+	 	 var reg = /^1[3|4|5|7|8|9]\d{9}$/;
+         var basicSalary = $("#basicSalary").val(); 
+         var probationSalary = $("#probationSalary").val();
+         var pushMoney = $("#pushMoney").val();
+         var phone = $("#phone").val();
+          if(basicSalary == "" || basicSalary == null){
+        	 $.threetop("转正工资不能为空!");
+         }else if(probationSalary == "" || probationSalary == null){
+        	 $.threetop("试用工资不能为空!");
+         }else if(pushMoney == "" || pushMoney == null){
+        	 $.threetop("提成比例不能为空!");
+         }else if(phone == null || phone == null){
+         	 $.threetop("电话号码不能为空!");
+         }else if(!reg.test(phone)){
+         	 $.threetop("电话号码有误!");
+         }else{
+             $("#realname").removeAttr("disabled");
+             $("#aliasname").removeAttr("disabled"); 
+             $("#phone").removeAttr("disabled"); 
+             $("#actoresSaveForm").ajaxSubmit(function(data) {
+                    if(data.resultStatus == 200){
+                   		 $(".zhezhao-basewindow").hide();
+		                 $(".basewindow").hide();
+		                 $('body').append($("#actoresSaveForm"));
+		                 $("#actoresSaveForm").hide();
+                   		 grid.refreshPage();
+                    }else{ 
+                    }
+              })
+         }
+     });
+	 $(".updateUrl").click(function() {
+	     var $chuangkou=$("#linkUrlForm");
+	     
+	     if(grid.getSelectedRow().length>0){
+	    		var id = grid.getRowRecord(grid.getSelectedRow()).id;
+	            var editurl = "${pageContext.request.contextPath}/actoresOnline/editActores.do";
+	    		$.ajax({
+		          type: "get",
+		          dataType: "json",
+		          url: editurl,
+		          data: "id="+id,
+		          show:"slide",
+		          success: function(data){ 
+			        var $data = data.data;
+			        $.basewindow("艺人视频地址",$chuangkou,402,200);
+			        $(".basewindow").addClass("custom-scroll");
+			        $("#linkUrlForm #id").val($data.id);   
+	            	$("#linkUrlForm #linkUrl").val($data.linkUrl);
+					
+			   	  }, error : function(data){}
+				});
+	    	}else{
+	    		$.threesecond("请先选择", 200, 100, 1000);
+	    	}
+	 })
+	 
+	 	$("#add").click(function(){
+	 	    var linkUrl = $("#linkUrlForm #linkUrl").val();
+	 	    var id = $("#linkUrlForm #id").val();
+	 	   	var editurl = "${pageContext.request.contextPath}/actoresOnline/editActoresLinkUrl.do";
+	 		$.ajax({
+		          type: "post",
+		          dataType: "json",
+		          url: editurl,
+		          data: "id="+id+"&linkUrl="+linkUrl,
+		          show:"slide",
+		          success: function(data){ 
+		              $(".zhezhao-basewindow").hide();
+		              $(".basewindow").hide();
+		              $('body').append($("#linkUrlForm"));
+		              $("#linkUrlForm").hide();
+		              grid.refreshPage();
+					
+			   	  }, error : function(data){}
+	 		})
+	 	})
+		
+				 /**查看全部*/
+			 $(".views").click(function() {
+	 			var $chuangkou = $("#emplook");
+				if (grid.getSelectedRow().length > 0) {
+					var id = grid.getRowRecord(grid.getSelectedRow()).id;
+					 var editurl = "${pageContext.request.contextPath}/actoresOnline/editActoresoffline.do";
+					$.ajax({
+						type : "get",
+						dataType : "json",
+						url : editurl,
+						data : "id=" + id,
+						show : "slide",
+						success : function(data) {
+							  var $data = data.data; 
+								$("#emplook #vsex").text($data.sex);
+								$("#emplook #vrealname").text($data.realname);
+								$("#emplook #valiasname").text($data.aliasname);
+								$("#emplook #vphone").text($data.phone);
+								$("#emplook #vqq").text($data.qq); 
+								$("#emplook #ventryTime").text($data.entryTime); 
+								if($data.genrer=="试用")
+									$("#emplook #vbasicSalary").text($data.probationSalary); 
+								if($data.genrer=="正式")
+									$("#emplook #vbasicSalary").text($data.basicSalary); 	
+								$("#emplook #vpushMoney").text($data.pushMoney); 
+								$("#emplook #vbirth").text($data.birth);  
+								$("#emplook #vgenre").text($data.genre); 
+								 
+								$("#emplook #vlinkUrl").text($data.linkUrl); 
+								$("#emplook #vidcard").text($data.idcard);
+								$("#emplook #vaddress").text($data.address);
+								$("#emplook #vbankCard").text($data.bankCard);
+								$("#emplook #vbankAddress").text($data.bankAddress);
+						},
+						error : function(data) {
+						}
+					});
+					$.basewindow("详细资料", $chuangkou,600,370);
+					$chuangkou.css({
+						"display" : "block"
+					});
+					} else {
+						$.threesecond("请先选择", 200, 100, 1000);
+					}
+				});
+				
+				 /**详情 */
+		 $(".viewsplat").click(function() {
+ 			var $chuangkou = $("#emplook");
+			if (grid.getSelectedRow().length > 0) {
+				var id = grid.getRowRecord(grid.getSelectedRow()).id;
+				 var editurl = "${pageContext.request.contextPath}/actoresOnline/editActoresoffline.do";
+				$.ajax({
+					type : "get",
+					dataType : "json",
+					url : editurl,
+					data : "id=" + id,
+					show : "slide",
+					success : function(data) {
+						  var $data = data.data; 
+							$("#emplook #vsex").text($data.sex);
+							$("#emplook #vrealname").text($data.realname);
+							$("#emplook #valiasname").text($data.aliasname);
+							$("#emplook #vphone").text($data.phone);
+							$("#emplook #vqq").text($data.qq); 
+							$("#emplook #ventryTime").text($data.entryTime); 
+							if($data.genrer=="试用")
+								$("#emplook #vbasicSalary").text($data.probationSalary); 
+							if($data.genrer=="正式")
+								$("#emplook #vbasicSalary").text($data.basicSalary); 	
+							$("#emplook #vpushMoney").text($data.pushMoney); 
+							$("#emplook #vbirth").text($data.birth);  
+							$("#emplook #vgenre").text($data.genre); 
+							 
+							$("#emplook #vlinkUrl").text($data.linkUrl); 
+							$("#emplook #vidcard").text($data.idcard);
+							$("#emplook #vaddress").text($data.address);
+							$("#emplook #vbankCard").text($data.bankCard);
+							$("#emplook #vbankAddress").text($data.bankAddress);
+					},
+					error : function(data) {
+					}
+				});
+				$.basewindow("详细资料", $chuangkou,600,370);
+				$chuangkou.css({
+					"display" : "block"
+				});
+				} else {
+					$.threesecond("请先选择", 200, 100, 1000);
+				}
+			});
+			
+	//快速搜索
+		$("#fast").change(function() {
+		    var fastArg = $("#fast").val();
+			var searchParames={
+			    "fastArg": fastArg
+			}
+			grid.search(searchParames);
+		})
+		//高级搜索提交
+		$("#sousuo .koko").click(function() { 
+		    var snumber = $("#snumber").val();
+			var srealname = $("#srealname").val();
+			var saliasname = $("#saliasname").val(); 
+			var sphone = $("#sphone").val(); 
+			
+			var searchParames={
+			    "snumber":snumber,
+				"srealname":srealname,
+				"saliasname":saliasname, 
+				"sphone":sphone
+			}
+			// searchParames = 'param1=val1&param2=val2';
+			// searchParames = {'param1': 'val1', 'param2': 'val2'};
+			grid.search(searchParames);
+			$("#sousuo").hide(); 
+			$(".zhezhao-basewindow").hide();
+			$(".basewindow").hide();
+		})
+     $.ajax({
+    		type: "POST",
+    		url: "${pageContext.request.contextPath}/platManager/readBaseTabCommon.do",
+    		data: "",
+    		cache: false
+    	}).done(function (data) {
+    		if(data.data.length > 0){
+    			$(data.data).each(function(index,value){
+	    			var $self=$(this);
+	    			$(".right-twoRight .rspan ul").append("<li><a href='${pageContext.request.contextPath}/actoresOnline/showOffline.do?branchs="+$self[0].opkey+"'>"+ $self[0].opName+"</a></li>")
+	    		});
+	    		$(".right-twoRight .regspan").show();
+    			$(".right-twoRight .rspan").show();
+    		}
+    	});
+    	$(".right-twoRight .rspan>span").click(function(){
+			if (!$(".right-twoRight .rspan ul").is(":animated")) {
+				$(".right-twoRight .rspan ul").fadeToggle();
+		   	}
+		});
+});
+</script>
+</head>
+<body class="custom-scroll">
+    <div class="right-one fsize18 fweightbold clearFix">
+	   		<div class="fl">
+	   			<span class="refresh fl"></span>
+        		<span class="num fl">2</span>
+	   		</div>
+	   		<div class="fr">
+	   			<span class="rName fl"></span>
+	   			<span class="username fl">${user.user.accounts}</span>
+	   			<span class="fl">, 欢迎来到<spring:message code="title"/></span>
+	   			<a href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+	   		</div>
+	   </div>
+	<div class="rightPadd">
+		<div class="right-twohalf">
+			<span>首页</span> 
+			<span>></span>
+			<span>人事系统</span> 
+			<span>></span>
+			<span class="color99">线下艺人</span>
+		</div>
+		<div class="clearFix right-twoRight">
+			<div class="fr">
+				<span class="regspan">查看分公司：</span>
+				<div class="rspan"><span>${branchsMsg}</span><ul></ul></div>
+				<div class="search">
+		    		<input id="fast" type="text" placeholder="姓名搜索">
+			    	<button type="button" id="seach" class="tableok">搜索</button>				
+				</div>
+				<input class="searchAll" type="button" value="高级搜索"/>
+			</div>
+		</div>
+		<div class="control">
+			<jsp:include page="attsCommon.jsp"></jsp:include> 
+		</div>
+		<!-- 高级搜索 -->
+			<form action="${pageContext.request.contextPath}/emp/search.do" method="post" enctype="multipart/form-data" id="sousuo" style="display:none;margin-left:20px;margin-right:20px;">
+		
+				<table class="table">
+					<tr>
+						<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+						<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+					</tr>
+					<tr>
+					<tr>
+						<td colspan="4"><p style=" margin: 0">基本资料</p>
+						</td>
+					</tr>
+					<tr>
+						<td style="text-align: right;">姓名：</td>
+						<td ><input type="text" name="realname" id="srealname" class="w200"></td>
+						<td style="text-align: right;">艺名：</td>
+						<td><input type="text" name="aliasname" id="saliasname" class="w200"></td>
+					</tr>
+					<tr>
+						<td style="text-align: right;">员工号：</td>
+						<td  ><input type="text" name="number" id="snumber" class="w200"></td>
+						<td style="text-align: right;">电话：</td>
+						<td ><input type="text" name="phone" id="sphone" class="w200"></td>
+					</tr>
+				</table>
+				<p class="bCenter">
+					<input type="hidden" name="id" id="id"> <span class="ok koko">提交</span> <input class="cancel" type="reset" name="Input" value="关闭">
+				</p>
+			</form>
+			
+		<div class="custom-scroll thistable"  style="overflow:auto; background-color:#fff; ">
+			<table id="searchTable"class="table tablelist">
+				<tr class="firsttr">
+			        <th w_index="id" w_align="center"width="1%;"w_hidden="true">id</th>
+			        <th w_num="line" w_align="center" width="1%;">序号</th>
+			        <th w_index="number" w_align="center"width="1%;">员工号</th>
+			        <th w_index="realname" w_align="center"width="1%;">姓名</th>
+			        <th w_index="aliasname" w_align="center"width="1%;">艺名</th>
+			        <th w_index="sex" w_align="center"width="1%;">性别</th>
+			        <th w_edit="linkUrl" w_index="linkUrl" w_align="center"width="1%;">主播视频</th>
+			        <th  w_index="platNames" w_align="center" width="1%;">所在平台</th>
+			        <th w_align="center">备注</th>
+			        <!-- 
+			        <th w_index="phone" w_align="center"width="1%;">联系电话</th> 
+			        <th w_index="qq" w_align="center"width="1%;">QQ</th> 
+			        <th w_index="genre" w_align="center"width="1%;">艺人类型</th> 
+			        <th w_index="genrer" w_align="center" width="1%;">转正状态</th>
+			        <th w_index="probationSalary" w_align="center"width="1%;">试用期工资</th>
+			        <th w_index="basicSalary" w_align="center"width="1%;">底薪</th>
+			        <th w_index="pushMoney" w_align="center"width="1%;">提成比例</th>
+			        <th w_index="createDT" w_align="center"width="1%;">创建时间</th>
+			          -->
+		   		</tr>
+		</table>
+		<!-- 新增 -->
+		<form id="actoresForm" style="display:none;margin-left:20px;margin-right:20px;">
+			<input type="hidden" name="id" id="id"> 
+			<p>请输入员工号或真实姓名</p>
+			<p>
+				<input type="text" name="name" id="name" maxlength="400" class="input w200">
+				<span class="next" style="margin-left:20px;border: 1px solid #ddd;text-align: center;height: 32px;line-height: 32px;box-shadow: inset 0 0 6px #599eeb; display: inline-block;color: #fff;background-color: #0074ac;;width: auto;padding: 0px 20px;border-radius: 5px;margin-right: 10px;cursor: pointer;">搜索</span>
+			</p>
+			<div class="custom-scroll" style="position:relative;margin-top:20px;height:150px;overflow:auto;padding:10px 20px;;border:1px solid #ddd">
+			<table style="width:100%" class="yirentable">
+				<tr class="firsttr">
+					<th hidden>id</th>
+					<th width="33%">员工号</th>
+					<th width="33%">真实姓名</th>
+					<th width="34%">艺名</th>
+				</tr>
+			</table>
+			</div>
+			<p class="bCenter"><input type="hidden" name="id" id="id" value="">
+			<span class="next2" style="border: 1px solid #ddd;text-align: center;height: 32px;line-height: 32px;display: inline-block;color: #fff;background-color: #e35d00;
+    box-shadow:inset 0 0 6px #f3c19f; width: 82px;padding: 0px 20px;border-radius: 5px;margin-right: 10px;margin-top:20px;cursor: pointer;">添加</span>&nbsp;&nbsp;&nbsp;&nbsp;
+			<input class="cancel" type="reset" name="Input" value="关闭"></p>
+		</form>
+			<form action="${pageContext.request.contextPath}/actoresOnline/saveActores.do?t=OFFLINE" method="post" enctype="multipart/form-data" id="actoresSaveForm" style="display:none;margin-left:20px;margin-right:20px;">
+					<table class="table mains">
+						<tr>
+							<td colspan="2"style="width:50%;padding:0;border:none;"></td>
+							<td colspan="2"style="width:50%;padding:0;border:none;"></td>
+						</tr>
+						<tr>
+							<td style="text-align: right;">真实姓名： </td>
+							<td><input type="text" name="realname" id="realname" class="w200"></td>
+							<td style="text-align: right;">艺名： </td>
+							<td><input type="text" name="aliasname" id="aliasname" class="w200"></td>
+						</tr>
+						<tr>
+							<td style="text-align: right;">联系电话：<label style="color: red;">*</label> </td>
+							<td><input type="text" name="phone" id="phone" class="w200"></td>
+							<td style="text-align: right;">QQ：</td>
+							<td colspan="3"><input  type="text" name="qq" id="qq"  class="w200"></td> 
+						</tr>
+						<tr>
+							<td style="text-align: right;">性别：<label style="color: red;">*</label></td>
+							<td>
+								<select id="sex" name="sex"  class="w200">
+									<option value="WOMAN">女</option>
+									<option value="MAN">男</option>
+								</select>
+							</td>
+							<td style="text-align: right;">提成比例：<label style="color: red;">*</label></td>
+							<td colspan="3"><input id="pushMoney" name="pushMoney" class="easyui-numberbox input" style="width:186px;">%</td>
+						</tr>
+						<tr>
+							<td style="text-align: right;">试用工资：<label style="color: red;">*</label></td>
+							<td><input id="probationSalary" name="probationSalary" class="easyui-numberbox input w200"></td>
+							<td style="text-align: right;">转正工资：<label style="color: red;">*</label></td>
+							<td><input id="basicSalary" name="basicSalary"  class="easyui-numberbox input"></td>
+						</tr>
+						<tr>
+							<td style="text-align: right;">身份证号：</td>
+							<td ><input type="text" name="idcard" id="idcard" class="w200"></td> 
+							<td style="text-align: right;">身份证扫描件：</td>
+							<td colspan="3"><input  type="file" name="idImage" id="idImage"  class="w200"></td>  
+						</tr>
+						<tr>
+							<td style="text-align: right;">现居地址：</td>
+							<td colspan="3"><input type="text" name="address" id="address" style="width:600px;"></td>
+						</tr>
+						<tr>
+							<td style="text-align:center;" colspan="4">
+								<input type="hidden" name="id" id="id">
+								<input type="hidden" name="empid" id="empid">
+								<input type="hidden" name="type" id="type">
+								<input type="hidden" name="genrer" id="genrer">
+								<input type="hidden" name="channelsId" id="channelsId">
+								<input type="hidden" name="loadTable" id="loadTable">
+								<input type="hidden" name="platId" id="platId">
+								<p>
+									<span class="okok">提交</span>&nbsp;&nbsp;&nbsp;&nbsp;
+									<input class="cancel" type="reset" name="Input" value="关闭">
+								</p>
+							</td>
+						</tr>
+					</table>
+			</form>
+		   <form action="${pageContext.request.contextPath}/actoresOnline/updateActoresLeave.do" method="post" id="leaveForm" style="display:none;margin-left:20px;margin-right:20px;">
+		        <p>离职原因：</p>
+		        <input type="hidden" name="id" id="id">
+		        <input type=hidden name="type" id="type" value="2">
+		        <input type=hidden name="t" id="t" value="OFFLINE">
+		        <p><textarea name="reason" id="reason" style="width:230px; height:100px;"></textarea></p> 
+		        <p><input class="ok"  type="submit" value="提交">&nbsp;&nbsp;&nbsp;&nbsp;<input class="cancel" type="reset" name="Input" value="关闭"></p>
+		    </form>
+		<!-- 查看详细 -->
+		
+			<div id="emplook" style="margin-left: 20px; margin-right: 20px; display:none;">
+				<table class="table2">
+					<tr>
+						<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+						<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+					</tr>
+					<tr>
+						<td colspan="4" class="yellowline"><p style=" margin: 0">基本资料</p>
+						</td>
+					</tr> 
+					<tr>
+						<td style="text-align: right;" class="hei">真实姓名：</td>
+						<td><span id="vrealname" class="w200"></span>
+						</td>
+						<td style="text-align: right;" class="hei">	QQ：</td>
+						<td><span id="vqq"></span>
+						</td>
+					</tr>
+					<tr>
+						<td style="text-align: right;" class="hei">联系电话：</td>
+						<td><span id="vphone" class="w200">男 </span></td>
+						<td style="text-align: right;" class="hei">艺名：</td>
+						<td><span id="valiasname" class="w200"></span>
+						</td>
+		
+					</tr>
+					<tr>
+						<td style="text-align: right;" class="hei">身份证号：</td>
+						<td><span id="vidcard" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">入职时间：</td>
+						<td><span id="ventryTime" class="w200"></span></td>
+					</tr>
+					<tr>
+						<td style="text-align: right;" class="hei">联系电话：</td>
+						<td><span id="vphone" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">性别：</td>
+						<td><span id="vsex" class="w200"></span>
+						</td>
+					</tr>
+		
+					<tr>
+						<td style="text-align: right;" class="hei">艺人类型：</td>
+						<td><span id="vgenre" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">底薪：</td>
+						<td><span id="vbasicSalary" class="w200"></span></td>
+					</tr>
+		
+					<tr>
+						<td style="text-align: right;" class="hei">提成比例：</td>
+						<td><span id="vpushMoney" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">现居地址：</td>
+						<td><span id="vaddress" class="w200"></span></td>
+					</tr> 
+					<tr>
+						<td style="text-align: right;" class="hei">工资卡账号：</td>
+						<td><span id="vbankCard" class="w200"></span></td>
+						<td style="text-align: right;" class="hei">工资银行卡开户行：</td>
+						<td><span id="vbankAddress" class="w200"></span></td>
+					</tr>  
+		
+				</table>
+				<p style="text-align:center">
+					<input class="cancel" type="reset" name="Input" value="关闭">
+				</p>
+			</div>
+		
+			<div id="updateLinkUrl" style="margin-left: 20px; margin-right: 20px; display:none;">
+				<form action="" id="linkUrlForm"><table class="table2">
+					<tr>
+						<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+						<td colspan="2" style="width:50%;padding:0;border:none;"></td>
+					</tr>
+					
+					<tr>
+						<td style="text-align: left;" class="hei">视频链接：</td>
+						<td colspan="3" style="text-align: left;"><input  id="linkUrl" type="text"  style="width:260px;" /></td>
+						</td>
+					</tr>  
+		
+					</table>
+					<p style="text-align:center">
+						<input id="id" name="id" type="hidden">
+						<input class="ok" id="add"  name="Input" type="button"  value="保存">
+						<input class="cancel" type="reset" name="Input"   value="关闭">
+					</p>
+				</form>
+			</div>
+		</div> 
+	</div>
+</body>
+</html>

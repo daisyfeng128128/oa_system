@@ -1,0 +1,37 @@
+package com.baofeng.oa.service;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.ElectEquipentBean;
+import com.baofeng.oa.bean.OfficeSuppliesBean;
+import com.baofeng.oa.entity.ElectEquipent;
+import com.baofeng.oa.entity.OfficeSupplies;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+
+public interface IPurchaseService {
+
+	NPageResult<?> readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer type,SearchFilter searchFilter);
+
+	boolean saveElectEquipent(ElectEquipentBean bean, RoleUsers users,Integer branchs, HttpServletRequest request);
+
+	boolean deleteElectEquipent(Integer id, HttpServletRequest request);
+
+	ElectEquipent readElectEquipent(Integer id);
+
+	ElectEquipentBean readElectEquipentBean(Integer id);
+
+	NPageResult<?> readPagesR(int pageSize, int curPage, String sortName,String sortOrder, Integer type, SearchFilter searchFilter);
+
+	OfficeSupplies readOfficeSupplies(Integer id);
+
+	OfficeSuppliesBean readOfficeSuppliesBean(Integer id);
+
+	boolean deleteOfficeSupplies(Integer id, HttpServletRequest request);
+
+	boolean saveOfficeSupplies(OfficeSuppliesBean bean, RoleUsers users,
+			Integer branchs, HttpServletRequest request);
+
+}

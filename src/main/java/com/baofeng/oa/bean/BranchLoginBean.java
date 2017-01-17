@@ -1,0 +1,174 @@
+package com.baofeng.oa.bean;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import com.baofeng.utils.CustomDateSerializerFormat2;
+
+/** 
+ * 功能：分公司登陆表
+ *  */
+public class BranchLoginBean implements Serializable{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String id;
+	/** 员工号 */
+	private String number;
+	/** 名字 */
+	private String name;
+	/** 联系电话 */
+	private String phone;
+	/** 电子邮件 */
+	private String email;
+	/** 所在子公司 */
+	private String ownBranchs;
+	/** 所在子公司 */
+	private String ownBranchs_id;
+	/** 目标子公司 */
+	private String tarBranchs;
+	/** 目标子公司 */
+	private String tarBranchs_id;
+	/** 部门 */
+	private String depart;
+	/** 职位 */
+	private String positions;
+	/** 角色权限 */
+ 	private String role;
+ 	/** 角色权限ID */
+ 	private String role_id;
+	/** 账号状态 */
+	private String overdues ;
+	/** 结束时间 */
+	@JsonSerialize(using = CustomDateSerializerFormat2.class)
+	private Date endTime;
+	/** 创建时间 */
+	@JsonSerialize(using = CustomDateSerializerFormat2.class)
+	private Date createDT;
+	/** 员工id */
+	private String empid;
+	/** 登录公司 */
+	private String branchs;
+	/** 角色权限ID list*/
+ 	private List<String> role_id1;
+	
+	public List<String> getRole_id1() {
+		return role_id1;
+	}
+	public void setRole_id1(List<String> role_id1) {
+		this.role_id1 = role_id1;
+	}
+	public String getBranchs() {
+		return branchs;
+	}
+	public void setBranchs(String branchs) {
+		this.branchs = branchs;
+	}
+	public String getOwnBranchs_id() {
+		return ownBranchs_id;
+	}
+	public void setOwnBranchs_id(String ownBranchs_id) {
+		this.ownBranchs_id = ownBranchs_id;
+	}
+	public String getEmpid() {
+		return empid;
+	}
+	public void setEmpid(String empid) {
+		this.empid = empid;
+	}
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getNumber() {
+		return number;
+	}
+	public void setNumber(String number) {
+		this.number = number;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getPhone() {
+		return phone;
+	}
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+	public String getEmail() {
+		return email;
+	}
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	public String getOwnBranchs() {
+		return ownBranchs;
+	}
+	public void setOwnBranchs(String ownBranchs) {
+		this.ownBranchs = ownBranchs;
+	}
+	public String getTarBranchs() {
+		return tarBranchs;
+	}
+	public void setTarBranchs(String tarBranchs) {
+		this.tarBranchs = tarBranchs;
+	}
+	public String getTarBranchs_id() {
+		return tarBranchs_id;
+	}
+	public void setTarBranchs_id(String tarBranchs_id) {
+		this.tarBranchs_id = tarBranchs_id;
+	}
+	public String getDepart() {
+		return depart;
+	}
+	public void setDepart(String depart) {
+		this.depart = depart;
+	}
+	public String getPositions() {
+		return positions;
+	}
+	public void setPositions(String positions) {
+		this.positions = positions;
+	}
+	public String getRole() {
+		return role;
+	}
+	public void setRole(String role) {
+		this.role = role;
+	}
+	public String getRole_id() {
+		return role_id;
+	}
+	public void setRole_id(String role_id) {
+		this.role_id = role_id;
+	}
+	public String getOverdues() {
+		return overdues;
+	}
+	public void setOverdues(String overdues) {
+		this.overdues = overdues;
+	}
+	public Date getEndTime() {
+		return endTime;
+	}
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+	public Date getCreateDT() {
+		return createDT;
+	}
+	public void setCreateDT(Date createDT) {
+		this.createDT = createDT;
+	}
+	
+	
+}

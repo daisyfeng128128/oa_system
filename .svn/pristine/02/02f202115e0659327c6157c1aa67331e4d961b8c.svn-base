@@ -1,0 +1,98 @@
+package com.baofeng.oa.dao;
+
+import java.util.List;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.baofeng.commons.entity.BaseEntity.EntityStatus;
+import com.baofeng.oa.entity.Disciplinary;
+import com.baofeng.utils.DetachedCriteriaUtil;
+import com.baofeng.utils.IBaseDAO;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+@Repository("disciplinaryDAO")
+public class DisciplinaryDAO {
+
+	@Autowired
+	private IBaseDAO baseDAO;
+
+	public IBaseDAO getBaseDAO() {
+		return baseDAO;
+	}
+
+	public void setBaseDAO(IBaseDAO baseDAO) {
+		this.baseDAO = baseDAO;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public NPageResult readPages(int pageSize, int curPage, String sortName,String sortOrder, Integer type, String fastArg, Integer id,SearchFilter searchFilter) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(Disciplinary.class);
+			/*detachedCriteria.createAlias("employee", "employee");*/
+			if (id != null)
+				detachedCriteria.add(Restrictions.eq("depart.id", Integer.valueOf(id)));
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			detachedCriteria.addOrder(Order.asc("createDT"));
+			DetachedCriteriaUtil.addSearchFilter(detachedCriteria, searchFilter);
+			return this.baseDAO.NfindByPages(detachedCriteria, pageSize, curPage);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return null;
+	}
+
+	public Disciplinary readDisciplinaryById(Integer id) {
+		try {
+			Disciplinary disciplinary = (Disciplinary) this.baseDAO.get(Disciplinary.class, id);
+			return disciplinary;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public boolean saveDisciplinary(Disciplinary disciplinary) {
+		try {
+			if (disciplinary != null && disciplinary.getId() != null && disciplinary.getId().intValue() > 0) {
+				this.baseDAO.update(disciplinary);
+			} else {
+				this.baseDAO.save(disciplinary);
+			}
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Disciplinary> readAllDisciplinary(SearchFilter searchFilter) {
+		try {
+			DetachedCriteria detachedCriteria = DetachedCriteria.forClass(Disciplinary.class);
+			detachedCriteria.add(Restrictions.eq("status", EntityStatus.NORMAL));
+			DetachedCriteriaUtil.addSearchFilter(detachedCriteria, searchFilter);
+			detachedCriteria.addOrder(Order.desc("createDT"));
+			return (List<Disciplinary>) baseDAO.findAllByCriteria(detachedCriteria);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	public Disciplinary readDisciplinary(Integer id) {
+		try {
+			Disciplinary disciplinary = (Disciplinary) this.baseDAO.get(Disciplinary.class, id);
+			return disciplinary;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	
+}

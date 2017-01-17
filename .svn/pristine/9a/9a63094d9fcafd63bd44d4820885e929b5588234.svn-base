@@ -1,0 +1,23 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<script>
+	$(function() {
+		if (window.location.href.indexOf("purType=1") >= 0) {
+			$(".right-two a span").removeClass("spanchange")
+			$(".right-two a span").eq(0).addClass("spanchange")
+		} else if (window.location.href.indexOf("purType=2") >= 0) {
+			$(".right-two a span").removeClass("spanchange")
+			$(".right-two a span").eq(1).addClass("spanchange")
+		} else{
+			$(".right-two a span").removeClass("spanchange")
+			$(".right-two a span").eq(0).addClass("spanchange")
+		}
+		
+	});
+</script>
+<div class="rightPadd">
+		<div class="right-two clearFix">
+			<a href="${pageContext.request.contextPath}/purchaseApplication/show.do?purType=2"><span class="spanchange tBtn">电子设备</span></a> <a
+			   href="${pageContext.request.contextPath}/purchaseApplication/showCh.do?purType=1"><span class="tBtn">办公用品</span></a>
+	</div>
+</div>

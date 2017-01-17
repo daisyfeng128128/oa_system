@@ -1,0 +1,25 @@
+package com.baofeng.oa.service;
+
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.entity.BranchUser;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.SearchFilter;
+
+public interface IBranchUserService {
+
+	@SuppressWarnings("rawtypes")
+	NPageResult readAllPages(int pageSize, int curPage, String sortName, String sortOrder, SearchFilter filter);
+
+	boolean addBranchLogin(BranchUser branch);
+
+	BranchUser readBranchLogin(Integer id);
+
+	boolean delete(Integer id);
+
+	boolean checkBranchUser(BranchUser branch);
+
+	BranchUser readBranchLoginbyNum(Integer number);
+
+	boolean deletebyNum(Integer number, RoleUsers users);
+
+}

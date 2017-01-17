@@ -1,0 +1,246 @@
+package com.baofeng.oa.controller;
+
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.time.DateUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.baofeng.commons.controller.BaseController;
+import com.baofeng.commons.entity.RoleDetailsAtts;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.entity.Assets;
+import com.baofeng.oa.entity.BranchOffice;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.service.IAssetsService;
+import com.baofeng.oa.service.IBranchOfficeService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.utils.Constants;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.ResultMsg;
+
+/**
+ * 员工转职
+ */
+@Controller
+@RequestMapping("/assets")
+public class AssetsController extends BaseController {
+
+	@Autowired
+	private IBranchOfficeService branchOfficeService;
+	@Autowired
+	private IAssetsService assetsService;
+	@Autowired
+	private IEmployeeService employeeService;
+
+	@RequestMapping(value = "/show", method = RequestMethod.GET)
+	public ModelAndView show(HttpServletRequest request, Integer branchs) {
+		ModelAndView mav = new ModelAndView(Constants.COREWEB_BUILDITEMS + "/assetsApplication");
+		List<RoleDetailsAtts> attsList = super.attributeRoleDetails(request, String.valueOf("assets/show.do"));
+		branchs = branchs == null ? super.getSessionAttribute(request, Constants.CURRENT_BRANCHS) : branchs;
+		String branchsMsg = String.valueOf("");
+		BranchOffice boffice = this.branchOfficeService.readBranchOffice(branchs);
+		if (boffice != null)
+			branchsMsg = boffice.getIpgp();
+		mav.addObject("attsList", attsList);
+		mav.addObject("branchs", branchs);
+		mav.addObject("branchsMsg", branchsMsg);
+		return mav;
+	}
+	
+
+	/**
+	 * 功能：分页数据
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/readPages", method = RequestMethod.POST)
+	public NPageResult<?> readPages(int pageSize, int curPage, String sortName, String sortOrder,Integer branchs, HttpServletRequest request) {
+		branchs = branchs == null ? super.getSessionAttribute(request, Constants.CURRENT_BRANCHS) : branchs;
+		String branchsMsg = String.valueOf("");
+		BranchOffice boffice = this.branchOfficeService.readBranchOffice(branchs);
+		if (boffice != null)
+			branchsMsg = boffice.getIpgp();
+		NPageResult<?> pages = this.assetsService.readPages(pageSize, curPage, sortName, sortOrder,branchsMsg, super.searchFilter(request,branchs));
+		return pages;
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/save", method = RequestMethod.POST)
+	public ResultMsg save(String remarks, @RequestParam MultipartFile[] upload ,HttpServletRequest request)throws Exception {
+		ResultMsg msg = new ResultMsg();
+		final String EXTENSION_XLS = ".xls";
+		final String EXTENSION_XLSX = ".xlsx";
+		String date = Constants.convert(DateUtils.addMonths(new Date(), -1), Constants.format7);
+		if (upload != null && upload.length > 0) {
+			for (MultipartFile $file : upload) {
+				if (!$file.isEmpty()) {
+					String $name = $file.getOriginalFilename();
+					String ext = $name.substring($name.lastIndexOf("."), $name.length());
+					if(ext.endsWith(EXTENSION_XLS) || ext.endsWith(EXTENSION_XLSX)){
+						String fileName =date + ext;
+						String path = Constants.DEFAULT_UPLOADEXCEL+"/Asset/"+date;
+						File myPath = new File(path);  
+			            if ( !myPath.exists()){//若此目录不存在，则创建之  
+			                myPath.mkdirs();  
+			            } 
+						FileUtils.copyInputStreamToFile($file.getInputStream(), new File(myPath, fileName));
+					}
+				}
+			}
+		}
+		DateFormat sdf=new SimpleDateFormat("yyyy-MM");
+		Assets post = this.assetsService.readAllassetsByThisMonth(sdf.parse(date));
+		if (post != null) {
+			post.setRemarks(remarks);
+			DateFormat sd=new SimpleDateFormat("yyyy-MM-dd");
+			post.setCompleteDT(sd.parse(sd.format(new Date())));
+		}else{
+			post = new Assets();
+			RoleUsers users = (RoleUsers) request.getSession().getAttribute(Constants.CURRENT_USER);
+			Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+			Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+			post.setBranchs(branchs);
+			post.setThisMonth(sdf.parse(date));
+			DateFormat sd=new SimpleDateFormat("yyyy-MM-dd");
+			post.setCompleteDT(sd.parse(sd.format(new Date())));
+			post.setEmployee(employee);
+			post.setFile("Excel文档");
+			post.setRemarks(remarks);
+		}
+		if (this.assetsService.addAssets(post, request)) {
+			msg.setResultStatus(200);
+		}
+		return null;
+	}
+
+	
+	/*@RequestMapping(value = "/upload", method = RequestMethod.POST)
+	public ModelAndView upload(@RequestParam MultipartFile[] upload, HttpServletRequest request) throws Exception {
+		ModelAndView mav = new ModelAndView(Constants.COREWEB_BUILDITEMS + "/assetsApplication");
+		List<RoleDetailsAtts> attsList = super.attributeRoleDetails(request, String.valueOf("assetsApplication/show.do"));
+		String date = Constants.convert(DateUtils.addMonths(new Date(), -1), Constants.format7);
+		String vdate = Constants.convert(Constants.convert(date, Constants.format7), Constants.format9);
+		String $current = Constants.convert(DateUtils.addMonths(new Date(), -1), Constants.format7);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession().getAttribute(Constants.CURRENT_USER);
+		mav.addObject("isEdit", true);
+		if (!date.equals($current)) {
+			mav.addObject("isEdit", false);
+		}
+		mav.addObject("attsList", attsList);
+		mav.addObject("date", date);
+		mav.addObject("vdate", vdate);
+		final String EXTENSION_XLS = ".xls";
+		final String EXTENSION_XLSX = ".xlsx";
+		List<Map<Integer, String>> result = new ArrayList<Map<Integer, String>>();
+		if (upload != null && upload.length > 0) {
+			for (MultipartFile $file : upload) {
+				String ext = $file.getOriginalFilename().substring($file.getOriginalFilename().indexOf("."), $file.getOriginalFilename().length());
+				Workbook workbook = null;
+				if (!$file.isEmpty()) {
+					if (ext.endsWith(EXTENSION_XLS)) {
+						CommonsMultipartFile cf = (CommonsMultipartFile) $file;
+						DiskFileItem fi = (DiskFileItem) cf.getFileItem();
+						File f = fi.getStoreLocation();
+						InputStream is = new FileInputStream(f);
+						workbook = new HSSFWorkbook(is);
+						Sheet sheet = workbook.getSheetAt(0);
+						Row row;
+						String cell;
+						for (int i = sheet.getFirstRowNum() + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+							Map<Integer, String> map = new HashMap<Integer, String>();
+							row = sheet.getRow(i);
+							for (int j = row.getFirstCellNum(); j < row.getPhysicalNumberOfCells(); j++) {
+								cell = row.getCell(j).toString();
+								map.put(j, cell);
+								}
+							result.add(map);
+						}
+					} else if (ext.endsWith(EXTENSION_XLSX)) {
+						OPCPackage pkg = OPCPackage.open($file.getInputStream());
+						XSSFWorkbook xwb = new XSSFWorkbook(pkg);
+						XSSFSheet sheet = xwb.getSheetAt(0);
+						XSSFRow row;
+						String cell;
+						for (int i = sheet.getFirstRowNum(); i < sheet.getPhysicalNumberOfRows(); i++) {
+							Map<Integer, String> map = new HashMap<Integer, String>();
+							row = sheet.getRow(i);
+							for (int j = row.getFirstCellNum(); j < row.getPhysicalNumberOfCells(); j++) {
+								cell = row.getCell(j).toString();
+								map.put(j, cell);
+							}
+							result.add(map);
+						}
+					}
+					
+				}
+			}
+		}
+		if (result != null && result.size() > 0) {
+			Date $date1 = CustomDateUtils.Handler.currentMonthFirstDay(DateUtils.addMonths(new Date(), -1));
+			Date $date2 = CustomDateUtils.Handler.currentMonthEndDay(DateUtils.addMonths(new Date(), -1));
+			Employee employee = this.employeeService.readEmployee(users.getUser().getId());
+			for (Map<Integer, String> post : result) {
+				try {
+					String assetsMoney = post.get(0);
+					String remarks = post.get(1);
+					if (assetsMoney != null && assetsMoney.trim().length() > 0) {
+						Assets assets = this.assetsService.readAllassetsByDate(branchs, $date1, $date2);
+						if (assets != null) {
+							try {
+								DateFormat sd=new SimpleDateFormat("yyyy-MM-dd");
+								DateFormat sdf=new SimpleDateFormat("yyyy-MM");
+								assets.setCompleteDT(sd.parse(sd.format(new Date())));
+								assets.setBranchs(branchs);
+								assets.setThisMonth(sdf.parse(date));
+								assets.setAssetsMoney(new BigDecimal(assetsMoney));
+								if (employee != null) {
+									assets.setEmployee(employee);
+								}
+								assets.setRemarks(remarks);
+								this.assetsService.addAssets(assets, request);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						} else {
+							assets = new Assets();
+								try {
+									SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+									DateFormat sd=new SimpleDateFormat("yyyy-MM-dd");
+									assets.setCompleteDT(sd.parse(sd.format(new Date())));
+									assets.setBranchs(branchs);
+									assets.setThisMonth(sdf.parse(date));
+									assets.setAssetsMoney(new BigDecimal(assetsMoney));
+									if (employee != null) {
+										assets.setEmployee(employee);
+									}
+									assets.setFile("Excel文档");
+									assets.setRemarks(remarks);
+									this.assetsService.addAssets(assets, request);
+								} catch (Exception e) {
+									e.printStackTrace();
+							}
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return mav;
+	}*/
+	
+}

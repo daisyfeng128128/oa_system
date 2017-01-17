@@ -1,0 +1,49 @@
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts.Enabled"%>
+<%@page import="com.baofeng.commons.entity.RoleDetailsAtts"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<script>
+$(function () {
+		if (window.location.href.indexOf("purType=1") >= 0) {
+			$(".right-two a span").removeClass("spanchange")
+			$(".right-two a span").eq(0).addClass("spanchange")
+		} else if (window.location.href.indexOf("purType=2") >= 0) {
+			$(".right-two a span").removeClass("spanchange")
+			$(".right-two a span").eq(1).addClass("spanchange")
+		} else{
+			$(".right-two a span").removeClass("spanchange")
+			$(".right-two a span").eq(0).addClass("spanchange")
+		}
+	
+	$(".right-onehalf span").click(function(){
+    	var $self=$(this);
+    	if(!$self.hasClass("spanchange")){
+    		$(".right-onehalf span").removeClass("spanchange");
+    		$self.addClass("spanchange"); 
+    		$.ajax({
+				type: "POST",
+				url: "${pageContext.request.contextPath}/purchaseAudit/readBaseTabCommon.do",
+				data: $(".right-onehalf .spanchange").attr("value")+"&date=${date}&branchs=${branchs}",
+				cache: false
+			}).done(function (data) {
+				var $data = data.exData;
+				if($data != null && $data.id != null){
+					$(".right-two a").each(function(){
+						$(this).attr({"href":$(this).attr("href").substring(0,$(this).attr("href").indexOf("?"))+"?platId="+$(".right-onehalf .spanchange").attr("value")+"&date=${date}&branchs=${branchs}&mId="+$data.id});
+					});
+					$(".right-two .spanchange").click();
+				}
+			}).error(function (jqXHR, textStatus, errorThrown) {});
+    	}
+	});
+	
+});
+</script>
+
+<div class="rightPadd">
+		<div class="right-two clearFix">
+			<a href="${pageContext.request.contextPath}/purchaseAudit/show.do?purType=2"><span class="spanchange tBtn">电子设备</span></a> <a
+			   href="${pageContext.request.contextPath}/purchaseAudit/showCh.do?purType=1"><span class="tBtn">办公用品</span></a>
+	</div>
+</div>

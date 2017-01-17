@@ -1,0 +1,138 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>修改密码</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/views/css/bootstrap.min.css" />
+<link rel="stylesheet" href="${pageContext.request.contextPath}/views/css/all.css" />
+<script src="${pageContext.request.contextPath}/views/js/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/views/js/sea.js"></script>
+<script>
+	seajs.use("${pageContext.request.contextPath}/views/js/bootstrap.min");
+	seajs.use("${pageContext.request.contextPath}/views/js/all");
+</script>
+<style>
+body {
+	height: 100%;
+	min-width: 200px;
+	overflow: hidden;
+	position: relative;
+}
+#oldPassWord,#newPassWord,#newagain{
+	width:200px; border-radius:2px; border:1px solid #c9c9c9; height:30px; text-indent:1em;
+	box-shadow: 0 4px 6px 0 rgba(0,0,0,.1);	
+}
+.cancel{
+	box-shadow: inset 0 0 6px #fbfbfb;
+}
+</style>
+<script>
+$(function() {
+	//回车操作
+	$(window).keydown(function (e) {
+    	if (e.which == 13) {
+       		$(".okok").click();
+		}
+	});
+	
+	$(".loginout").click(function(data){
+			$.ajax({
+				type : "POST",
+				cache : false,
+				async : false,
+				url : "${pageContext.request.contextPath}/user/logout.do",
+				success : function(data) {
+					if(data.resultStatus == 200){
+						window.location.href="${pageContext.request.contextPath}/login.do";
+					}
+				}
+		    });			
+		});
+	
+	//提交+判断(修改)
+	$(".okok").click(function() {
+		var oldPassWord = $("#oldPassWord").val();
+		var newPassWord = $("#newPassWord").val();
+		var newagain = $("#newagain").val();
+		if (oldPassWord == "" || oldPassWord == null) {
+			$.threetop("请填写旧密码!");
+		} else if (newPassWord == "" || newPassWord == null) {
+								$.threetop("请填写新密码!");
+		} else if (newPassWord != newagain) {
+								$.threetop("密码两遍不一致!");
+		} else if (oldPassWord.length < 6 || newPassWord.length < 6 || newagain.length < 6) {
+			$.threetop("密码大于6位!");
+		} else {
+			$.ajax({
+				type : "POST",
+				url : "${pageContext.request.contextPath}/users/updatePersonPasswd.do",
+				cache : false,
+				data : "oldPassWord="+ oldPassWord+ "&newPassWord="+ newPassWord,
+			}).done(function(data) {
+				if (data.resultStatus == 100) {
+					$.threetop("密码修改失败!");
+				} else {
+					$.threesecond("密码修改成功", 200, 100, 1000);
+					$.ajax({
+						type : "POST",
+						cache : false,
+						url : "${pageContext.request.contextPath}/user/logout.do",
+						success : function(data) {
+							if(data.resultStatus == 200){
+								window.top.location="${pageContext.request.contextPath}/login.do";
+							}
+						}
+				    });	
+				}
+			}).error(function(jqXHR, textStatus,errorThrown) {});
+		}
+	});
+});
+</script>
+</head>
+<body class="custom-scroll">
+    <div class="right-one fsize18 fweightbold clearFix">
+	   		<div class="fl">
+	   			<span class="refresh fl"></span>
+	   		</div>
+	   		<div class="fr">
+	   			<span class="rName fl"></span>
+	   			<span class="username fl">${user.user.accounts}</span>
+	   			<span class="fl">, 欢迎来到<spring:message code="title"/></span>
+	   			<a href="#" id="logout" target="_parent" class="loginout fl">| 退出系统</a>
+	   		</div>
+	   </div>
+	   	<div class="right">
+		<div class="rightPadd">
+			<div class="right-twohalf">
+				<span>首页</span> 
+				<span>></span>
+				<span>个人中心</span> 
+				<span>></span>
+				<span class="color99">修改密码</span>
+	    	</div>
+			<div class="thistable custom-scroll" style="padding-left:36px;padding-top:34px; background-color:#fff; color:#999; ">
+				<p style="font-size:18px; color:#333; margin-bottom:24px; ">修改密码</p>
+				<p>旧密码：</p>
+				<p>
+					<input type="password" id="oldPassWord" />
+				</p>
+				<p>新密码：</p>
+				<p>
+					<input type="password" id="newPassWord" style="width:200px" />
+				</p>
+				<p>重复新密码：</p>
+				<p>
+					<input type="password" id="newagain" style="width:200px" />
+				</p>
+				<p>
+					<span class="okok">修改</span>
+				</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

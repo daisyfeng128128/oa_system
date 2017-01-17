@@ -1,0 +1,319 @@
+package com.baofeng.oa.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.baofeng.commons.controller.BaseController;
+import com.baofeng.commons.entity.RoleDetailsAtts;
+import com.baofeng.commons.entity.RoleUsers;
+import com.baofeng.oa.bean.ElectEquipentBean;
+import com.baofeng.oa.bean.EmployeeBean;
+import com.baofeng.oa.bean.OfficeSuppliesBean;
+import com.baofeng.oa.entity.BranchOffice;
+import com.baofeng.oa.entity.ElectEquipent;
+import com.baofeng.oa.entity.Employee;
+import com.baofeng.oa.entity.OfficeSupplies;
+import com.baofeng.oa.service.IBranchOfficeService;
+import com.baofeng.oa.service.IEmployeeService;
+import com.baofeng.oa.service.IPurchaseService;
+import com.baofeng.utils.Constants;
+import com.baofeng.utils.NPageResult;
+import com.baofeng.utils.ResultMsg;
+
+/**
+ * 功能 ： 采购申请
+ * */
+@Controller
+@RequestMapping("/purchaseApplication")
+public class PurchaseController extends BaseController {
+
+	@Autowired
+	private IPurchaseService purchaseService;
+	@Autowired
+	private IBranchOfficeService branchOfficeService;
+	@Autowired
+	private IEmployeeService employeeService;
+
+	@RequestMapping(value = "/show", method = RequestMethod.GET)
+	public ModelAndView show(Integer branchs, Integer purType, HttpServletRequest request) {
+		ModelAndView mav = new ModelAndView(Constants.COREWEB_BUILDITEMS + "/electEquipent");
+		List<RoleDetailsAtts> attsList = super.attributeRoleDetails(request, String.valueOf("purchaseApplication/show.do"));
+		branchs = branchs == null ? super.getSessionAttribute(request, Constants.CURRENT_BRANCHS) : branchs;
+		String branchsMsg = String.valueOf("");
+		BranchOffice boffice = this.branchOfficeService.readBranchOffice(branchs);
+		purType = purType == null ? 2 : purType;
+		if (boffice != null)
+			branchsMsg = boffice.getIpgp();
+		mav.addObject("attsList", attsList);
+		mav.addObject("branchs", branchs);
+		mav.addObject("purType", purType);
+		mav.addObject("branchsMsg", branchsMsg);
+		return mav;
+	}
+
+	@RequestMapping(value = "/showCh", method = RequestMethod.GET)
+	public ModelAndView showCh(Integer branchs, Integer purType, HttpServletRequest request) {
+		ModelAndView mav = new ModelAndView(Constants.COREWEB_BUILDITEMS + "/officeSupplies");
+		List<RoleDetailsAtts> attsList = super.attributeRoleDetails(request, String.valueOf("purchaseApplication/show.do"));
+		branchs = branchs == null ? super.getSessionAttribute(request, Constants.CURRENT_BRANCHS) : branchs;
+		String branchsMsg = String.valueOf("");
+		purType = purType == null ? 1 : purType;
+		BranchOffice boffice = this.branchOfficeService.readBranchOffice(branchs);
+		if (boffice != null)
+			branchsMsg = boffice.getIpgp();
+		mav.addObject("attsList", attsList);
+		mav.addObject("branchs", branchs);
+		mav.addObject("purType", purType);
+		mav.addObject("branchsMsg", branchsMsg);
+		return mav;
+	}
+
+	/**
+	 * 功能：分页数据 日常用品
+	 * */
+	@ResponseBody
+	@SuppressWarnings("rawtypes")
+	@RequestMapping(value = "/readPagesR", method = RequestMethod.POST)
+	public NPageResult readPagesR(int pageSize, int curPage, String sortName, String sortOrder, Integer type, Integer branchs,String fastArg,HttpServletRequest request) {
+		NPageResult pages = null;
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (users != null) {
+			pages = this.purchaseService.readPagesR(pageSize, curPage, sortName, sortOrder, type, fastArg,super.searchFilter(request, branchs));
+		}
+		return pages;
+	}
+
+	/**
+	 * 功能：分页数据 
+	 * */
+	@ResponseBody
+	@SuppressWarnings("rawtypes")
+	@RequestMapping(value = "/readPages", method = RequestMethod.POST)
+	public NPageResult readPages(int pageSize, int curPage, String sortName, String sortOrder, Integer type, Integer branchs,String fastArg,
+			HttpServletRequest request) {
+		NPageResult pages = null;
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (users != null) {
+			pages = this.purchaseService.readPages(pageSize, curPage, sortName, sortOrder, type, fastArg, super.searchFilter(request, branchs));
+		}
+		return pages;
+	}
+
+	/**
+	 * 功能：保存 修改
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/save", method = RequestMethod.POST)
+	public ResultMsg saveElectEquipent(@RequestBody List<ElectEquipentBean> list, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.purchaseService.saveElectEquipent(list, users, branchs, request)) {
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+	/**
+	 * 功能：保存 修改
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/mid", method = RequestMethod.POST)
+	public ResultMsg saveElectEquipent(@RequestBody ElectEquipentBean bean, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.purchaseService.modElectEquipent(bean, users, branchs, request)) {
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：删除
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/delete", method = RequestMethod.GET)
+	public ResultMsg deleteElectEquipent(Integer id, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		if (this.purchaseService.deleteElectEquipent(id, request)) {
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：编辑
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/editelectEquipent", method = RequestMethod.GET)
+	public ResultMsg readElectEquipentBean(Integer id) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		ElectEquipentBean electEquipent = this.purchaseService.readElectEquipentBean(id);
+		if (electEquipent != null) {
+			msg.setResultStatus(200);
+			msg.setData(electEquipent);
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：查看详情
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/editPur", method = RequestMethod.GET)
+	public ElectEquipentBean editPur(Integer id) {
+		ElectEquipent electEquipent = this.purchaseService.readElectEquipent(id);
+		if (electEquipent != null) {
+			ElectEquipentBean bean = new ElectEquipentBean();
+			bean.setRealname(electEquipent.getRealname());
+			bean.setNum(electEquipent.getEmployee().getNumber().toString());
+			bean.setDepart(electEquipent.getDepart());
+			bean.setApplyDT(electEquipent.getApplyDT());
+			bean.setGoodsname(electEquipent.getGoodsname());
+			bean.setModel(electEquipent.getModel());
+			bean.setPriceMoney(electEquipent.getPriceMoney().toString());
+			bean.setNumbers(electEquipent.getNumbers().toString());
+			bean.setTaxMoney(electEquipent.getTaxMoney().toString());
+			bean.setTotalMoney(electEquipent.getTotalMoney().toString());
+			bean.setUsername(electEquipent.getUsername());
+			return bean;
+		}
+		return null;
+	}
+	
+	/**
+	 * 功能：保存
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/saveOff", method = RequestMethod.POST)
+	public ResultMsg saveOfficeSupplies(@RequestBody List<OfficeSuppliesBean> list, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.purchaseService.saveOfficeSupplies(list, users, branchs, request)) {
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+	/**
+	 * 功能：修改
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/midOff", method = RequestMethod.POST)
+	public ResultMsg saveOfficeSupplies(@RequestBody OfficeSuppliesBean bean, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultStatus(100);
+		Integer branchs = getSessionAttribute(request, Constants.CURRENT_BRANCHS);
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		if (this.purchaseService.saveOfficeSupplies(bean, users, branchs, request)) {
+			msg.setResultStatus(200);
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：删除
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/deleteOff", method = RequestMethod.GET)
+	public ResultMsg deleteOfficeSupplies(Integer id, HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		if (this.purchaseService.deleteOfficeSupplies(id, request)) {
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：编辑
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/editOff", method = RequestMethod.GET)
+	public ResultMsg readOfficeSuppliesBean(Integer id) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		OfficeSuppliesBean officeSupplies = this.purchaseService.readOfficeSuppliesBean(id);
+		if (officeSupplies != null) {
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+			msg.setData(officeSupplies);
+		}
+		return msg;
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/editEmp", method = RequestMethod.GET)
+	public ResultMsg readUser( HttpServletRequest request) {
+		ResultMsg msg = new ResultMsg();
+		msg.setResultMessage("errors");
+		RoleUsers users = (RoleUsers) request.getSession(false).getAttribute(Constants.CURRENT_USER);
+		Employee emp = this.employeeService.readEmployeeByNumber(users.getUser().getNumber());
+		EmployeeBean employeeBean = new EmployeeBean();
+		if (emp != null) {
+			employeeBean.setId(emp.getId());
+			employeeBean.setName(emp.getName());
+			employeeBean.setNum(String.valueOf(emp.getNumber()));
+			if (emp.getDepart().getName() != null) {
+				employeeBean.setDepName(emp.getDepart().getName());
+			}
+			msg.setData(employeeBean);
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+		}else{
+			employeeBean.setId(users.getUser().getId());
+			employeeBean.setName(users.getUser().getAccounts());
+			if (users.getUser().getNumber()!= null) {
+				employeeBean.setNum(String.valueOf(users.getUser().getNumber()));
+			}else{
+				employeeBean.setNum("");
+			}
+			employeeBean.setDepName("");
+			msg.setData(employeeBean);
+			msg.setResultStatus(200);
+			msg.setResultMessage("success");
+		}
+		return msg;
+	}
+	
+	/**
+	 * 功能：查看详情
+	 * */
+	@ResponseBody
+	@RequestMapping(value = "/editOfficeSupplies", method = RequestMethod.GET)
+	public OfficeSuppliesBean editOfficeSupplies(Integer id) {
+		OfficeSupplies officeSupplies = this.purchaseService.readOfficeSupplies(id);
+		if (officeSupplies != null) {
+			OfficeSuppliesBean bean = new OfficeSuppliesBean();
+			bean.setRealname(officeSupplies.getRealname());
+			bean.setNum(officeSupplies.getEmployee().getNumber().toString());
+			bean.setDepart(officeSupplies.getDepart());
+			bean.setApplyDT(officeSupplies.getApplyDT());
+			bean.setGoodsname(officeSupplies.getGoodsname());
+			bean.setModel(officeSupplies.getModel());
+			bean.setPriceMoney(officeSupplies.getPriceMoney().toString());
+			bean.setNumbers(officeSupplies.getNumbers().toString());
+			bean.setTaxMoney(officeSupplies.getTaxMoney().toString());
+			bean.setTotalMoney(officeSupplies.getTotalMoney().toString());
+			return bean;
+		}
+		return null;
+	}
+
+}
